@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.OTech">
+        
+        <!-- Login Activity - LAUNCHER -->
+        <activity
+            android:name=".activity.LoginActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Register Activity -->
+        <activity
+            android:name=".activity.RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".activity.LoginActivity" />
+        
+        <!-- Forgot Password Activity -->
+        <activity
+            android:name=".activity.ForgotPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".activity.LoginActivity" />
+        
+        <!-- Main Activity (Home) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        
+        <!-- Filter Products Activity -->
+        <activity
+            android:name=".activity.FilterProductsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Categories Activity -->
+        <activity
+            android:name=".activity.CategoriesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Product Detail Activity -->
+        <activity
+            android:name=".activity.ProductDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Cart Activity -->
+        <activity
+            android:name=".activity.CartActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Checkout Activity -->
+        <activity
+            android:name=".activity.CheckoutActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.CartActivity" />
+        
+        <!-- Profile Activity -->
+        <activity
+            android:name=".activity.ProfileActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Wishlist Activity -->
+        <activity
+            android:name=".activity.WishlistActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Order History Activity -->
+        <activity
+            android:name=".activity.OrderHistoryActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Admin Activity -->
+        <activity
+            android:name=".activity.AdminActivity"
+            android:exported="false" />
+        
+        <!-- Manage Products Activity -->
+        <activity
+            android:name=".activity.ManageProductsActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminActivity" />
+        
+        <!-- Add/Edit Product Activity -->
+        <activity
+            android:name=".activity.AddEditProductActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ManageProductsActivity" />
+        
+        <!-- Manage Orders Activity -->
+        <activity
+            android:name=".activity.ManageOrdersActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminActivity" />
+        
+        <!-- Admin Order Detail Activity -->
+        <activity
+            android:name=".activity.AdminOrderDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ManageOrdersActivity" />
+        
+        <!-- Manage Users Activity -->
+        <activity
+            android:name=".activity.ManageUsersActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminActivity" />
+        
+        <!-- Manage Reviews Activity -->
+        <activity
+            android:name=".activity.ManageReviewsActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminActivity" />
+        
+        <!-- User Detail Activity -->
+        <activity
+            android:name=".activity.UserDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ManageUsersActivity" />
+        
+        <!-- Profile Info Activity -->
+        <activity
+            android:name=".activity.ProfileInfoActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Address Book Activity -->
+        <activity
+            android:name=".activity.AddressBookActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Change Password Activity -->
+        <activity
+            android:name=".activity.ChangePasswordActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Support Activity -->
+        <activity
+            android:name=".activity.SupportActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Terms Activity -->
+        <activity
+            android:name=".activity.TermsActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProfileActivity" />
+        
+        <!-- Order Detail Activity -->
+        <activity
+            android:name=".activity.OrderDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.OrderHistoryActivity" />
+        
+        <!-- Order Confirmation Activity -->
+        <activity
+            android:name=".activity.OrderConfirmationActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
+        <!-- Notifications Activity -->
+        <activity
+            android:name=".activity.NotificationsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+            
+    </application>
+
+</manifest>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Removed: bottom sheet for quantity selection replaced by direct add-to-cart behavior. Keep hidden placeholder to avoid resource-not-found. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="0dp"
+    android:visibility="gone" />

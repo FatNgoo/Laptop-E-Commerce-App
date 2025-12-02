@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<font-family xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- Download Open Sans fonts from Google Fonts and place in res/font/ -->
+    <!-- Use font files: opensans_regular.ttf, opensans_bold.ttf, opensans_semibold.ttf -->
+    <!-- This is a placeholder. You need to download the actual font files. -->
+</font-family>

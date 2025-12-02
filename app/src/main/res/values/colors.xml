@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 Colors -->
+    <color name="colorPrimary">#0A5688</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorSecondary">#FF9800</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+    <color name="backgroundColor">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorOnSurface">#000000</color>
+    <color name="colorError">#B00020</color>
+    <color name="colorPriceRed">#E53935</color>
+    <color name="colorSuccess">#4CAF50</color>
+    
+    <!-- Standard Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="gray_light">#FFFFFF</color>
+    <color name="gray_medium">#9E9E9E</color>
+    <color name="gray_dark">#424242</color>
+    <color name="blue">#2196F3</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#BDBDBD</color>
+    <color name="textColorPrimary">#212121</color>
+    <color name="textColorSecondary">#757575</color>
+    
+    <!-- Additional Colors -->
+    <color name="success_green">#4CAF50</color>
+    <color name="info_background">#FFFFFF</color>
+    <color name="divider_color">#E0E0E0</color>
+</resources>

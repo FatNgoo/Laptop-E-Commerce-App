@@ -1,0 +1,954 @@
+[
+  {
+    "id": 1,
+    "category": "Văn phòng",
+    "brand": "Dell",
+    "name": "Dell Inspiron 15 3530",
+    "original_price": 18500000,
+    "sale_price": 16990000,
+    "stock": 20,
+    "description": "Laptop văn phòng bền bỉ, thiết kế thanh lịch, bàn phím rộng rãi phù hợp nhập liệu.",
+    "specs": {
+      "cpu": "Intel Core i5-1335U",
+      "ram": "16GB DDR4 3200MHz",
+      "storage": "512GB SSD NVMe",
+      "gpu": "Intel UHD Graphics",
+      "screen": "15.6 inch FHD 120Hz"
+    }
+  },
+  {
+    "id": 2,
+    "category": "Văn phòng",
+    "brand": "HP",
+    "name": "HP Pavilion 15-eg3000",
+    "original_price": 19200000,
+    "sale_price": 17500000,
+    "stock": 20,
+    "description": "Thiết kế vỏ kim loại sang trọng, âm thanh B&O chất lượng cao, hiệu năng ổn định.",
+    "specs": {
+      "cpu": "Intel Core i5-13500H",
+      "ram": "16GB DDR4",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "15.6 inch FHD IPS"
+    }
+  },
+  {
+    "id": 3,
+    "category": "Văn phòng",
+    "brand": "Asus",
+    "name": "Asus Vivobook Go 15",
+    "original_price": 14500000,
+    "sale_price": 12990000,
+    "stock": 20,
+    "description": "Mỏng nhẹ, bản lề 180 độ, đạt độ bền chuẩn quân đội, giá thành hợp lý.",
+    "specs": {
+      "cpu": "AMD Ryzen 5 7520U",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "AMD Radeon Graphics",
+      "screen": "15.6 inch FHD OLED"
+    }
+  },
+  {
+    "id": 4,
+    "category": "Văn phòng",
+    "brand": "Acer",
+    "name": "Acer Aspire 5 Slim",
+    "original_price": 15900000,
+    "sale_price": 13990000,
+    "stock": 20,
+    "description": "Hiệu năng đa nhiệm tốt, tản nhiệt hiệu quả, phù hợp môi trường công sở.",
+    "specs": {
+      "cpu": "Intel Core i5-13420H",
+      "ram": "16GB DDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel UHD Graphics",
+      "screen": "14 inch FHD IPS"
+    }
+  },
+  {
+    "id": 5,
+    "category": "Văn phòng",
+    "brand": "Lenovo",
+    "name": "Lenovo IdeaPad Slim 5",
+    "original_price": 20500000,
+    "sale_price": 18990000,
+    "stock": 20,
+    "description": "Thiết kế tối giản, pin trâu, webcam có nắp che bảo mật.",
+    "specs": {
+      "cpu": "Intel Core i5-1340P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "16 inch WUXGA IPS"
+    }
+  },
+  {
+    "id": 6,
+    "category": "Văn phòng",
+    "brand": "MSI",
+    "name": "MSI Modern 14 C13M",
+    "original_price": 13500000,
+    "sale_price": 11990000,
+    "stock": 20,
+    "description": "Siêu nhẹ chỉ 1.4kg, thiết kế trẻ trung, phù hợp di chuyển nhiều.",
+    "specs": {
+      "cpu": "Intel Core i3-1315U",
+      "ram": "8GB DDR4",
+      "storage": "512GB SSD",
+      "gpu": "Intel UHD Graphics",
+      "screen": "14 inch FHD IPS"
+    }
+  },
+  {
+    "id": 7,
+    "category": "Văn phòng",
+    "brand": "LG",
+    "name": "LG Gram 14 2023",
+    "original_price": 28900000,
+    "sale_price": 24990000,
+    "stock": 20,
+    "description": "Siêu nhẹ vô địch (999g), thời lượng pin lên đến 20 giờ.",
+    "specs": {
+      "cpu": "Intel Core i5-1340P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "14 inch WUXGA IPS"
+    }
+  },
+  {
+    "id": 8,
+    "category": "Gaming",
+    "brand": "Asus",
+    "name": "Asus ROG Strix G16",
+    "original_price": 45000000,
+    "sale_price": 39990000,
+    "stock": 20,
+    "description": "Chiến thần gaming, tản nhiệt 3 quạt, LED RGB rực rỡ.",
+    "specs": {
+      "cpu": "Intel Core i9-13980HX",
+      "ram": "16GB DDR5",
+      "storage": "1TB SSD NVMe",
+      "gpu": "NVIDIA GeForce RTX 4060 8GB",
+      "screen": "16 inch QHD+ 240Hz"
+    }
+  },
+  {
+    "id": 9,
+    "category": "Gaming",
+    "brand": "MSI",
+    "name": "MSI Katana 15",
+    "original_price": 32000000,
+    "sale_price": 28500000,
+    "stock": 20,
+    "description": "Bàn phím cắt gọt độc đáo, hiệu năng mạnh mẽ cho mọi tựa game AAA.",
+    "specs": {
+      "cpu": "Intel Core i7-13620H",
+      "ram": "16GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4050 6GB",
+      "screen": "15.6 inch FHD 144Hz"
+    }
+  },
+  {
+    "id": 10,
+    "category": "Gaming",
+    "brand": "Acer",
+    "name": "Acer Predator Helios Neo 16",
+    "original_price": 38900000,
+    "sale_price": 35990000,
+    "stock": 20,
+    "description": "Công nghệ tản nhiệt Aeroblade 3D độc quyền, phím nóng Turbo.",
+    "specs": {
+      "cpu": "Intel Core i7-13700HX",
+      "ram": "16GB DDR5",
+      "storage": "512GB SSD",
+      "gpu": "NVIDIA GeForce RTX 4060 8GB",
+      "screen": "16 inch WQXGA 165Hz"
+    }
+  },
+  {
+    "id": 11,
+    "category": "Gaming",
+    "brand": "Lenovo",
+    "name": "Lenovo Legion Pro 5",
+    "original_price": 42000000,
+    "sale_price": 38990000,
+    "stock": 20,
+    "description": "Thiết kế tối giản nhưng hiệu năng khủng, màn hình chuẩn màu 100% sRGB.",
+    "specs": {
+      "cpu": "AMD Ryzen 7 7745HX",
+      "ram": "16GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4060 8GB",
+      "screen": "16 inch WQXGA 240Hz"
+    }
+  },
+  {
+    "id": 12,
+    "category": "Gaming",
+    "brand": "Gigabyte",
+    "name": "Gigabyte Aorus 15",
+    "original_price": 36500000,
+    "sale_price": 33990000,
+    "stock": 20,
+    "description": "Siêu mỏng trong phân khúc gaming, hỗ trợ AI cho game thủ.",
+    "specs": {
+      "cpu": "Intel Core i7-13700H",
+      "ram": "16GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "screen": "15.6 inch QHD 165Hz"
+    }
+  },
+  {
+    "id": 13,
+    "category": "Gaming",
+    "brand": "Razer",
+    "name": "Razer Blade 15",
+    "original_price": 65000000,
+    "sale_price": 59990000,
+    "stock": 20,
+    "description": "Vỏ nhôm nguyên khối cao cấp, thiết kế gaming đẳng cấp nhất.",
+    "specs": {
+      "cpu": "Intel Core i7-13800H",
+      "ram": "16GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "screen": "15.6 inch QHD 240Hz"
+    }
+  },
+  {
+    "id": 14,
+    "category": "Gaming",
+    "brand": "Dell",
+    "name": "Dell Alienware M16",
+    "original_price": 55000000,
+    "sale_price": 49990000,
+    "stock": 20,
+    "description": "Biểu tượng của sức mạnh, hệ thống tản nhiệt Cryo-Tech, thiết kế Legend 3.",
+    "specs": {
+      "cpu": "Intel Core i9-13900HX",
+      "ram": "32GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "screen": "16 inch QHD+ 165Hz"
+    }
+  },
+  {
+    "id": 15,
+    "category": "Mỏng nhẹ",
+    "brand": "Asus",
+    "name": "Asus Zenbook S 13 OLED",
+    "original_price": 39900000,
+    "sale_price": 36990000,
+    "stock": 20,
+    "description": "Laptop OLED mỏng nhất thế giới, vỏ gốm plasma độc đáo.",
+    "specs": {
+      "cpu": "Intel Core i7-1355U",
+      "ram": "32GB LPDDR5",
+      "storage": "1TB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "13.3 inch 2.8K OLED"
+    }
+  },
+  {
+    "id": 16,
+    "category": "Mỏng nhẹ",
+    "brand": "Dell",
+    "name": "Dell XPS 13 Plus",
+    "original_price": 48000000,
+    "sale_price": 44990000,
+    "stock": 20,
+    "description": "Thiết kế tương lai với bàn phím tràn viền và trackpad vô hình.",
+    "specs": {
+      "cpu": "Intel Core i7-1360P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "13.4 inch 3.5K OLED Touch"
+    }
+  },
+  {
+    "id": 17,
+    "category": "Mỏng nhẹ",
+    "brand": "HP",
+    "name": "HP Spectre x360 14",
+    "original_price": 42500000,
+    "sale_price": 39900000,
+    "stock": 20,
+    "description": "Xoay gập 360 độ, thiết kế vát cắt kim cương, bảo mật vân tay.",
+    "specs": {
+      "cpu": "Intel Core i7-1355U",
+      "ram": "16GB LPDDR4x",
+      "storage": "1TB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "13.5 inch 3K2K OLED"
+    }
+  },
+  {
+    "id": 18,
+    "category": "Mỏng nhẹ",
+    "brand": "Lenovo",
+    "name": "Lenovo Yoga Slim 7i Carbon",
+    "original_price": 29900000,
+    "sale_price": 26990000,
+    "stock": 20,
+    "description": "Vỏ Carbon siêu bền siêu nhẹ, màu trắng tinh khôi.",
+    "specs": {
+      "cpu": "Intel Core i5-1340P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "13.3 inch 2.5K 90Hz"
+    }
+  },
+  {
+    "id": 19,
+    "category": "Mỏng nhẹ",
+    "brand": "Apple",
+    "name": "MacBook Air M2 13 inch",
+    "original_price": 27990000,
+    "sale_price": 24990000,
+    "stock": 20,
+    "description": "Thiết kế phẳng mới, chip M2 mạnh mẽ, pin cả ngày dài.",
+    "specs": {
+      "cpu": "Apple M2 (8-core CPU)",
+      "ram": "8GB Unified",
+      "storage": "256GB SSD",
+      "gpu": "Apple M2 (8-core GPU)",
+      "screen": "13.6 inch Liquid Retina"
+    }
+  },
+  {
+    "id": 20,
+    "category": "Mỏng nhẹ",
+    "brand": "Acer",
+    "name": "Acer Swift Go 14",
+    "original_price": 21000000,
+    "sale_price": 18990000,
+    "stock": 20,
+    "description": "Màn hình OLED rực rỡ, trọng lượng nhẹ, đầy đủ cổng kết nối.",
+    "specs": {
+      "cpu": "Intel Core i5-13500H",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "14 inch 2.8K OLED 90Hz"
+    }
+  },
+  {
+    "id": 21,
+    "category": "Mỏng nhẹ",
+    "brand": "LG",
+    "name": "LG Gram SuperSlim",
+    "original_price": 35000000,
+    "sale_price": 31990000,
+    "stock": 20,
+    "description": "Mỏng như quyển tạp chí (10.9mm), màn hình OLED chống chói.",
+    "specs": {
+      "cpu": "Intel Core i5-1340P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "15.6 inch FHD OLED"
+    }
+  },
+  {
+    "id": 22,
+    "category": "Sinh viên",
+    "brand": "Asus",
+    "name": "Asus Vivobook 16",
+    "original_price": 12500000,
+    "sale_price": 10990000,
+    "stock": 20,
+    "description": "Màn hình lớn 16 inch làm việc đa nhiệm, giá rẻ cho sinh viên.",
+    "specs": {
+      "cpu": "Intel Core i3-1315U",
+      "ram": "8GB DDR4",
+      "storage": "256GB SSD",
+      "gpu": "Intel UHD Graphics",
+      "screen": "16 inch WUXGA IPS"
+    }
+  },
+  {
+    "id": 23,
+    "category": "Sinh viên",
+    "brand": "Dell",
+    "name": "Dell Vostro 3520",
+    "original_price": 14200000,
+    "sale_price": 12500000,
+    "stock": 20,
+    "description": "Bền bỉ, tản nhiệt tốt, hỗ trợ đầy đủ cổng kết nối cho học tập.",
+    "specs": {
+      "cpu": "Intel Core i5-1235U",
+      "ram": "8GB DDR4",
+      "storage": "512GB SSD",
+      "gpu": "Intel UHD Graphics",
+      "screen": "15.6 inch FHD 120Hz"
+    }
+  },
+  {
+    "id": 24,
+    "category": "Sinh viên",
+    "brand": "HP",
+    "name": "HP 15s-fq5000",
+    "original_price": 11900000,
+    "sale_price": 9990000,
+    "stock": 20,
+    "description": "Thiết kế bo tròn mềm mại, phím bấm êm, pin khá.",
+    "specs": {
+      "cpu": "Intel Core i3-1215U",
+      "ram": "8GB DDR4",
+      "storage": "256GB SSD",
+      "gpu": "Intel UHD Graphics",
+      "screen": "15.6 inch FHD"
+    }
+  },
+  {
+    "id": 25,
+    "category": "Sinh viên",
+    "brand": "Acer",
+    "name": "Acer Aspire 3",
+    "original_price": 9500000,
+    "sale_price": 8490000,
+    "stock": 20,
+    "description": "Giá cực tốt, đủ dùng cho Word, Excel và lướt web.",
+    "specs": {
+      "cpu": "AMD Ryzen 3 7320U",
+      "ram": "8GB LPDDR5",
+      "storage": "256GB SSD",
+      "gpu": "AMD Radeon Graphics",
+      "screen": "15.6 inch FHD"
+    }
+  },
+  {
+    "id": 26,
+    "category": "Sinh viên",
+    "brand": "Lenovo",
+    "name": "Lenovo V15 G4",
+    "original_price": 10500000,
+    "sale_price": 9200000,
+    "stock": 20,
+    "description": "Thiết kế thực dụng, bản lề mở rộng, phù hợp học nhóm.",
+    "specs": {
+      "cpu": "AMD Ryzen 3 7320U",
+      "ram": "8GB LPDDR5",
+      "storage": "256GB SSD",
+      "gpu": "AMD Radeon Graphics",
+      "screen": "15.6 inch FHD TN"
+    }
+  },
+  {
+    "id": 27,
+    "category": "Sinh viên",
+    "brand": "MSI",
+    "name": "MSI Modern 15 B13M",
+    "original_price": 15000000,
+    "sale_price": 13500000,
+    "stock": 20,
+    "description": "Cấu hình cao trong tầm giá, vỏ nhựa giả kim loại đẹp mắt.",
+    "specs": {
+      "cpu": "Intel Core i5-1335U",
+      "ram": "16GB DDR4",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "15.6 inch FHD IPS"
+    }
+  },
+  {
+    "id": 28,
+    "category": "Sinh viên",
+    "brand": "Gigabyte",
+    "name": "Gigabyte G5 MF (Gaming Budget)",
+    "original_price": 20900000,
+    "sale_price": 18990000,
+    "stock": 20,
+    "description": "Laptop Gaming giá rẻ nhất cho sinh viên vừa học vừa chơi.",
+    "specs": {
+      "cpu": "Intel Core i5-12500H",
+      "ram": "8GB DDR4",
+      "storage": "512GB SSD",
+      "gpu": "NVIDIA GeForce RTX 4050 6GB",
+      "screen": "15.6 inch FHD 144Hz"
+    }
+  },
+  {
+    "id": 29,
+    "category": "Cảm ứng",
+    "brand": "HP",
+    "name": "HP Envy x360 13",
+    "original_price": 23500000,
+    "sale_price": 21900000,
+    "stock": 20,
+    "description": "Xoay gập linh hoạt, màn hình cảm ứng nhạy, bút cảm ứng đi kèm.",
+    "specs": {
+      "cpu": "Intel Core i5-1230U",
+      "ram": "8GB LPDDR4x",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "13.3 inch FHD IPS Touch"
+    }
+  },
+  {
+    "id": 30,
+    "category": "Cảm ứng",
+    "brand": "Dell",
+    "name": "Dell Inspiron 14 7430 2-in-1",
+    "original_price": 21000000,
+    "sale_price": 19500000,
+    "stock": 20,
+    "description": "Biến hình thành máy tính bảng, âm thanh to rõ, viền mỏng.",
+    "specs": {
+      "cpu": "Intel Core i5-1335U",
+      "ram": "8GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "14 inch FHD+ Touch"
+    }
+  },
+  {
+    "id": 31,
+    "category": "Cảm ứng",
+    "brand": "Asus",
+    "name": "Asus Vivobook S 14 Flip",
+    "original_price": 18900000,
+    "sale_price": 17200000,
+    "stock": 20,
+    "description": "Năng động, màn hình cảm ứng tỷ lệ 16:10, tản nhiệt IceCool.",
+    "specs": {
+      "cpu": "Intel Core i5-13500H",
+      "ram": "16GB DDR4",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "14 inch WUXGA Touch"
+    }
+  },
+  {
+    "id": 32,
+    "category": "Cảm ứng",
+    "brand": "Lenovo",
+    "name": "Lenovo Yoga 7i",
+    "original_price": 25000000,
+    "sale_price": 23500000,
+    "stock": 20,
+    "description": "Thiết kế bo tròn cầm nắm thoải mái, màn hình OLED rực rỡ cảm ứng.",
+    "specs": {
+      "cpu": "Intel Core i5-1340P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "14 inch 2.8K OLED Touch"
+    }
+  },
+  {
+    "id": 33,
+    "category": "Cảm ứng",
+    "brand": "MSI",
+    "name": "MSI Summit E13 Flip Evo",
+    "original_price": 31000000,
+    "sale_price": 28900000,
+    "stock": 20,
+    "description": "Dòng doanh nhân cao cấp, bảo mật phần cứng, bút MSI Pen.",
+    "specs": {
+      "cpu": "Intel Core i7-1360P",
+      "ram": "16GB LPDDR5",
+      "storage": "1TB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "13.4 inch FHD+ 120Hz Touch"
+    }
+  },
+  {
+    "id": 34,
+    "category": "Cảm ứng",
+    "brand": "Acer",
+    "name": "Acer Spin 5",
+    "original_price": 26500000,
+    "sale_price": 24000000,
+    "stock": 20,
+    "description": "Nhẹ, tích hợp bút Stylus trong thân máy, màn hình độ phân giải cao.",
+    "specs": {
+      "cpu": "Intel Core i5-1240P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "14 inch WQXGA Touch"
+    }
+  },
+  {
+    "id": 35,
+    "category": "Cảm ứng",
+    "brand": "LG",
+    "name": "LG Gram 2-in-1 16",
+    "original_price": 38000000,
+    "sale_price": 34990000,
+    "stock": 20,
+    "description": "Máy tính lai nhẹ nhất thế giới ở kích thước 16 inch.",
+    "specs": {
+      "cpu": "Intel Core i7-1360P",
+      "ram": "16GB LPDDR5",
+      "storage": "512GB SSD",
+      "gpu": "Intel Iris Xe Graphics",
+      "screen": "16 inch WQXGA IPS Touch"
+    }
+  },
+  {
+    "id": 36,
+    "category": "Laptop AI",
+    "brand": "Asus",
+    "name": "Asus Zenbook 14 OLED AI",
+    "original_price": 28990000,
+    "sale_price": 26990000,
+    "stock": 20,
+    "description": "Trang bị chip Intel Core Ultra tích hợp NPU xử lý tác vụ AI chuyên biệt.",
+    "specs": {
+      "cpu": "Intel Core Ultra 5 125H",
+      "ram": "16GB LPDDR5X",
+      "storage": "512GB SSD",
+      "gpu": "Intel Arc Graphics (NPU AI)",
+      "screen": "14 inch 3K OLED 120Hz"
+    }
+  },
+  {
+    "id": 37,
+    "category": "Laptop AI",
+    "brand": "MSI",
+    "name": "MSI Prestige 16 AI Evo",
+    "original_price": 34000000,
+    "sale_price": 31900000,
+    "stock": 20,
+    "description": "Hiệu năng AI vượt trội, pin dung lượng cực lớn 99.9Whr.",
+    "specs": {
+      "cpu": "Intel Core Ultra 7 155H",
+      "ram": "32GB LPDDR5",
+      "storage": "1TB SSD",
+      "gpu": "Intel Arc Graphics",
+      "screen": "16 inch QHD+ IPS"
+    }
+  },
+  {
+    "id": 38,
+    "category": "Laptop AI",
+    "brand": "Acer",
+    "name": "Acer Swift Go 14 AI",
+    "original_price": 24500000,
+    "sale_price": 22990000,
+    "stock": 20,
+    "description": "Tích hợp phím Copilot riêng biệt, tối ưu hóa cuộc gọi video bằng AI.",
+    "specs": {
+      "cpu": "Intel Core Ultra 5 125H",
+      "ram": "16GB LPDDR5X",
+      "storage": "512GB SSD",
+      "gpu": "Intel Arc Graphics",
+      "screen": "14 inch 2.8K OLED"
+    }
+  },
+  {
+    "id": 39,
+    "category": "Laptop AI",
+    "brand": "Lenovo",
+    "name": "Lenovo Yoga 9i 2-in-1 (AI)",
+    "original_price": 41900000,
+    "sale_price": 38900000,
+    "stock": 20,
+    "description": "Thiết kế sang trọng như trang sức, chip AI hỗ trợ sáng tạo nội dung.",
+    "specs": {
+      "cpu": "Intel Core Ultra 7 155H",
+      "ram": "16GB LPDDR5X",
+      "storage": "1TB SSD",
+      "gpu": "Intel Arc Graphics",
+      "screen": "14 inch 4K OLED Touch"
+    }
+  },
+  {
+    "id": 40,
+    "category": "Laptop AI",
+    "brand": "HP",
+    "name": "HP Omen Transcend 14",
+    "original_price": 45000000,
+    "sale_price": 41500000,
+    "stock": 20,
+    "description": "Laptop Gaming AI nhẹ nhất thế giới, làm mát bằng AI.",
+    "specs": {
+      "cpu": "Intel Core Ultra 7 155H",
+      "ram": "16GB LPDDR5X",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4060 8GB",
+      "screen": "14 inch 2.8K OLED 120Hz"
+    }
+  },
+  {
+    "id": 41,
+    "category": "Laptop AI",
+    "brand": "Dell",
+    "name": "Dell XPS 14 (9440)",
+    "original_price": 52000000,
+    "sale_price": 49900000,
+    "stock": 20,
+    "description": "Thiết kế nhôm nguyên khối, chip AI tối ưu hiệu năng và pin.",
+    "specs": {
+      "cpu": "Intel Core Ultra 7 155H",
+      "ram": "16GB LPDDR5X",
+      "storage": "512GB SSD",
+      "gpu": "NVIDIA GeForce RTX 4050 6GB",
+      "screen": "14.5 inch FHD+ InfinityEdge"
+    }
+  },
+  {
+    "id": 42,
+    "category": "Laptop AI",
+    "brand": "Gigabyte",
+    "name": "Gigabyte AERO 14 OLED AI",
+    "original_price": 36000000,
+    "sale_price": 33500000,
+    "stock": 20,
+    "description": "Màn hình chuẩn màu điện ảnh, AI hỗ trợ render nhanh chóng.",
+    "specs": {
+      "cpu": "Intel Core i7-13700H (AI Software)",
+      "ram": "16GB LPDDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4050 6GB",
+      "screen": "14 inch 2.8K OLED"
+    }
+  },
+  {
+    "id": 43,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "Dell",
+    "name": "Dell Precision 3581",
+    "original_price": 42000000,
+    "sale_price": 39500000,
+    "stock": 20,
+    "description": "Workstation di động bền bỉ, chuyên chạy CAD, Revit mượt mà.",
+    "specs": {
+      "cpu": "Intel Core i7-13800H",
+      "ram": "16GB DDR5",
+      "storage": "512GB SSD",
+      "gpu": "NVIDIA RTX A1000 6GB",
+      "screen": "15.6 inch FHD IPS"
+    }
+  },
+  {
+    "id": 44,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "HP",
+    "name": "HP ZBook Firefly 16 G10",
+    "original_price": 38900000,
+    "sale_price": 36500000,
+    "stock": 20,
+    "description": "Máy trạm mỏng nhẹ, màn hình DreamColor chuẩn màu.",
+    "specs": {
+      "cpu": "Intel Core i7-1360P",
+      "ram": "32GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA RTX A500 4GB",
+      "screen": "16 inch WUXGA IPS"
+    }
+  },
+  {
+    "id": 45,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "Lenovo",
+    "name": "Lenovo ThinkPad P1 Gen 6",
+    "original_price": 62000000,
+    "sale_price": 58900000,
+    "stock": 20,
+    "description": "Sức mạnh tối thượng trong thân hình mỏng nhẹ, bàn phím huyền thoại.",
+    "specs": {
+      "cpu": "Intel Core i7-13800H",
+      "ram": "32GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA RTX 2000 Ada 8GB",
+      "screen": "16 inch WQXGA IPS"
+    }
+  },
+  {
+    "id": 46,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "Asus",
+    "name": "Asus ProArt Studiobook 16",
+    "original_price": 58000000,
+    "sale_price": 54900000,
+    "stock": 20,
+    "description": "Có núm xoay vật lý Asus Dial độc đáo cho Adobe, màn hình OLED 3.2K.",
+    "specs": {
+      "cpu": "Intel Core i9-13980HX",
+      "ram": "32GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "screen": "16 inch 3.2K OLED 120Hz"
+    }
+  },
+  {
+    "id": 47,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "MSI",
+    "name": "MSI Creator Z17 HX Studio",
+    "original_price": 68000000,
+    "sale_price": 64500000,
+    "stock": 20,
+    "description": "Thiết kế CNC nguyên khối, đạt chuẩn NVIDIA Studio cho sáng tạo.",
+    "specs": {
+      "cpu": "Intel Core i9-13950HX",
+      "ram": "64GB DDR5",
+      "storage": "2TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "screen": "17 inch QHD+ 165Hz Touch"
+    }
+  },
+  {
+    "id": 48,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "Gigabyte",
+    "name": "Gigabyte Aero 16 OLED",
+    "original_price": 49000000,
+    "sale_price": 45900000,
+    "stock": 20,
+    "description": "Màn hình 4K OLED cân chỉnh màu X-Rite từng máy tại nhà máy.",
+    "specs": {
+      "cpu": "Intel Core i9-13900H",
+      "ram": "32GB LPDDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "screen": "16 inch 4K OLED"
+    }
+  },
+  {
+    "id": 49,
+    "category": "Đồ hoạt- Kỹ thuật",
+    "brand": "Razer",
+    "name": "Razer Blade 16 Studio Edition",
+    "original_price": 89000000,
+    "sale_price": 84900000,
+    "stock": 20,
+    "description": "Màn hình Mini-LED chế độ kép (UHD+ 120Hz hoặc FHD+ 240Hz).",
+    "specs": {
+      "cpu": "Intel Core i9-13950HX",
+      "ram": "32GB DDR5",
+      "storage": "1TB SSD",
+      "gpu": "NVIDIA GeForce RTX 4080 12GB",
+      "screen": "16 inch Dual Mode Mini-LED"
+    }
+  },
+  {
+    "id": 50,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Air 13 M3 CTO 1",
+    "original_price": 32990000,
+    "sale_price": 31500000,
+    "stock": 20,
+    "description": "Bản nâng cấp RAM cho đa nhiệm mượt mà hơn trên chip M3 mới nhất.",
+    "specs": {
+      "cpu": "Apple M3 (8-core CPU)",
+      "ram": "16GB Unified",
+      "storage": "256GB SSD",
+      "gpu": "Apple M3 (10-core GPU)",
+      "screen": "13.6 inch Liquid Retina"
+    }
+  },
+  {
+    "id": 51,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Air 15 M3 CTO 2",
+    "original_price": 42990000,
+    "sale_price": 40990000,
+    "stock": 20,
+    "description": "Màn hình lớn, cấu hình Max Option cho dòng Air.",
+    "specs": {
+      "cpu": "Apple M3 (8-core CPU)",
+      "ram": "24GB Unified",
+      "storage": "512GB SSD",
+      "gpu": "Apple M3 (10-core GPU)",
+      "screen": "15.3 inch Liquid Retina"
+    }
+  },
+  {
+    "id": 52,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Pro 14 M3 Pro CTO 1",
+    "original_price": 54990000,
+    "sale_price": 52990000,
+    "stock": 20,
+    "description": "Dòng Pro với chip M3 Pro mạnh mẽ, màu Space Black mới.",
+    "specs": {
+      "cpu": "Apple M3 Pro (11-core CPU)",
+      "ram": "36GB Unified",
+      "storage": "512GB SSD",
+      "gpu": "Apple M3 Pro (14-core GPU)",
+      "screen": "14.2 inch Liquid Retina XDR"
+    }
+  },
+  {
+    "id": 53,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Pro 14 M3 Max CTO",
+    "original_price": 89990000,
+    "sale_price": 87500000,
+    "stock": 20,
+    "description": "Sức mạnh khủng khiếp trong thân hình 14 inch nhỏ gọn.",
+    "specs": {
+      "cpu": "Apple M3 Max (14-core CPU)",
+      "ram": "36GB Unified",
+      "storage": "1TB SSD",
+      "gpu": "Apple M3 Max (30-core GPU)",
+      "screen": "14.2 inch Liquid Retina XDR"
+    }
+  },
+  {
+    "id": 54,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Pro 16 M3 Pro CTO",
+    "original_price": 69990000,
+    "sale_price": 67990000,
+    "stock": 20,
+    "description": "Màn hình lớn nhất, pin trâu nhất dòng Pro, RAM nâng cấp.",
+    "specs": {
+      "cpu": "Apple M3 Pro (12-core CPU)",
+      "ram": "36GB Unified",
+      "storage": "1TB SSD",
+      "gpu": "Apple M3 Pro (18-core GPU)",
+      "screen": "16.2 inch Liquid Retina XDR"
+    }
+  },
+  {
+    "id": 55,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Pro 16 M3 Max CTO 1",
+    "original_price": 99990000,
+    "sale_price": 96990000,
+    "stock": 20,
+    "description": "Cấu hình đồ họa cao cấp cho Editor và 3D Artist chuyên nghiệp.",
+    "specs": {
+      "cpu": "Apple M3 Max (14-core CPU)",
+      "ram": "48GB Unified",
+      "storage": "1TB SSD",
+      "gpu": "Apple M3 Max (30-core GPU)",
+      "screen": "16.2 inch Liquid Retina XDR"
+    }
+  },
+  {
+    "id": 56,
+    "category": "Macbook CTO",
+    "brand": "Apple",
+    "name": "MacBook Pro 16 M3 Max Ultimate",
+    "original_price": 149990000,
+    "sale_price": 145000000,
+    "stock": 20,
+    "description": "Trùm cuối. Cấu hình cao nhất với bộ nhớ RAM khổng lồ.",
+    "specs": {
+      "cpu": "Apple M3 Max (16-core CPU)",
+      "ram": "128GB Unified",
+      "storage": "2TB SSD",
+      "gpu": "Apple M3 Max (40-core GPU)",
+      "screen": "16.2 inch Liquid Retina XDR"
+    }
+  }
+]
