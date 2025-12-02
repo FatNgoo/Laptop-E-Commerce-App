@@ -244,17 +244,127 @@ public class MockDataStore {
         Product product = new Product(id, name, price, originalPrice, description,
                 "https://via.placeholder.com/300x200?text=" + brand, brand, category, specs, rating, stock);
         product.setSoldCount(soldCount);
-        product.setImageUrls(getLaptopImages());
+        product.setImageUrls(getProductImages(name));
         products.add(product);
     }
     
-    private ArrayList<String> getLaptopImages() {
+    private ArrayList<String> getProductImages(String productName) {
         ArrayList<String> images = new ArrayList<>();
-        images.add("laptop1");
-        images.add("laptop2");
-        images.add("laptop3");
-        images.add("laptop4");
-        images.add("laptop5");
+        
+        // Dell Inspiron
+        if (productName.contains("Dell Inspiron")) {
+            images.add("laptopdellinspiron1");
+            images.add("laptopdellinspiron2");
+            images.add("laptopdellinspiron3");
+            images.add("laptopdellinspiron4");
+            images.add("laptopdellinspiron5");
+            images.add("laptopdellinspiron6");
+        }
+        // Asus Vivobook
+        else if (productName.contains("Asus Vivobook") || productName.contains("Asus VivoBook")) {
+            images.add("laptopasusvivobook1");
+            images.add("laptopasusvivobook2");
+            images.add("laptopasusvivobook3");
+            images.add("laptopasusvivobook4");
+            images.add("laptopasusvivobook5");
+            images.add("laptopasusvivobook6");
+            images.add("laptopasusvivobook7");
+        }
+        // Acer Aspire
+        else if (productName.contains("Acer Aspire")) {
+            images.add("laptopaceraspire1");
+            images.add("laptopaceraspire2");
+            images.add("laptopaceraspire3");
+            images.add("laptopaceraspire4");
+        }
+        // Lenovo IdeaPad / Lenovo Idea
+        else if (productName.contains("Lenovo IdeaPad") || productName.contains("Lenovo Idea")) {
+            images.add("laptoplenovoidea1");
+            images.add("laptoplenovoidea2");
+            images.add("laptoplenovoidea3");
+            images.add("laptoplenovoidea4");
+            images.add("laptoplenovoidea5");
+            images.add("laptoplenovoidea6");
+        }
+        // LG Gram
+        else if (productName.contains("LG Gram")) {
+            images.add("laptoplggram1");
+            images.add("laptoplggram2");
+            images.add("laptoplggram3");
+            images.add("laptoplggram4");
+            images.add("laptoplggram5");
+            images.add("laptoplggram6");
+        }
+        // Asus ROG
+        else if (productName.contains("Asus ROG") || productName.contains("ROG")) {
+            images.add("laptopasusrog1");
+            images.add("laptopasusrog2");
+            images.add("laptopasusrog3");
+            images.add("laptopasusrog4");
+            images.add("laptopasusrog5");
+            images.add("laptopasusrog6");
+            images.add("laptopasusrog7");
+        }
+        // MSI Katana
+        else if (productName.contains("MSI Katana")) {
+            images.add("laptopmsikatana1");
+            images.add("laptopmsikatana2");
+            images.add("laptopmsikatana3");
+            images.add("laptopmsikatana4");
+            images.add("laptopmsikatana5");
+            images.add("laptopmsikatana6");
+            images.add("laptopmsikatana7");
+        }
+        // Lenovo Legion
+        else if (productName.contains("Lenovo Legion")) {
+            images.add("laptoplenovolegion1");
+            images.add("laptoplenovolegion2");
+            images.add("laptoplenovolegion3");
+            images.add("laptoplenovolegion4");
+            images.add("laptoplenovolegion5");
+            images.add("laptoplenovolegion6");
+            images.add("laptoplenovolegion7");
+            images.add("laptoplenovolegion8");
+        }
+        // MacBook Air
+        else if (productName.contains("MacBook Air")) {
+            images.add("laptopmacbookair1");
+            images.add("laptopmacbookair2");
+            images.add("laptopmacbookair3");
+            images.add("laptopmacbookair4");
+        }
+        // MacBook Pro
+        else if (productName.contains("MacBook Pro")) {
+            images.add("laptopmacbookpro1");
+            images.add("laptopmacbookpro2");
+            images.add("laptopmacbookpro3");
+            images.add("laptopmacbookpro4");
+            images.add("laptopmacbookpro5");
+        }
+        // HP Victus (for HP Gaming)
+        else if (productName.contains("HP") && productName.contains("Victus")) {
+            images.add("laptophpvictus1");
+            images.add("laptophpvictus2");
+            images.add("laptophpvictus3");
+            images.add("laptophpvictus4");
+            images.add("laptophpvictus5");
+        }
+        // Lenovo ThinkPad
+        else if (productName.contains("ThinkPad")) {
+            images.add("laptoplenovothinkpad1");
+            images.add("laptoplenovothinkpad2");
+            images.add("laptoplenovothinkpad3");
+            images.add("laptoplenovothinkpad4");
+        }
+        // Default fallback
+        else {
+            images.add("laptop1");
+            images.add("laptop2");
+            images.add("laptop3");
+            images.add("laptop4");
+            images.add("laptop5");
+        }
+        
         return images;
     }
     

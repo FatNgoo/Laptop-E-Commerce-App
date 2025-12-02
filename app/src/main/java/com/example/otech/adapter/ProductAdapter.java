@@ -90,16 +90,26 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         ArrayList<String> imageUrls = product.getImageUrls();
         if (imageUrls != null && !imageUrls.isEmpty()) {
             String firstImage = imageUrls.get(0);
-            try {
-                // Try to parse as URI first (for content:// or file:// URIs)
-                android.net.Uri imageUri = android.net.Uri.parse(firstImage);
-                holder.ivProductImage.setImageURI(imageUri);
-            } catch (Exception e) {
-                // Fallback: Try as drawable resource name
-                int resId = context.getResources().getIdentifier(firstImage, "drawable", context.getPackageName());
+            
+            // Check if it's a drawable resource name (no scheme like content:// or file://)
+            if (!firstImage.contains("://")) {
+                // It's a drawable name (laptop1, banner2, etc.)
+                int resId = context.getResources().getIdentifier(
+                    firstImage.replace(".jpg", "").replace(".png", ""), 
+                    "drawable", 
+                    context.getPackageName()
+                );
                 if (resId != 0) {
                     holder.ivProductImage.setImageResource(resId);
                 } else {
+                    holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } else {
+                // It's a URI (content://, file://, etc.)
+                try {
+                    android.net.Uri imageUri = android.net.Uri.parse(firstImage);
+                    holder.ivProductImage.setImageURI(imageUri);
+                } catch (Exception e) {
                     holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
                 }
             }

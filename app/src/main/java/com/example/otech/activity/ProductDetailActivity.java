@@ -154,30 +154,12 @@ public class ProductDetailActivity extends AppCompatActivity {
             imageUrls.add("laptop3");
         }
         
-        // Convert drawable names to resource IDs
-        ArrayList<Integer> imageResIds = new ArrayList<>();
-        for (String imageName : imageUrls) {
-            int resId = getResources().getIdentifier(imageName, "drawable", getPackageName());
-            if (resId != 0) {
-                imageResIds.add(resId);
-            }
-        }
-        
-        if (imageResIds.isEmpty()) {
-            imageResIds.add(R.drawable.ic_launcher_foreground);
-        }
-        
-        // Convert ArrayList to int array
-        int[] images = new int[imageResIds.size()];
-        for (int i = 0; i < imageResIds.size(); i++) {
-            images[i] = imageResIds.get(i);
-        }
-        
-        ProductImagePreviewAdapter adapter = new ProductImagePreviewAdapter(this, images);
+        // Use new adapter that supports both URI and drawable names
+        ProductImagePreviewAdapter adapter = new ProductImagePreviewAdapter(this, imageUrls);
         vpProductImages.setAdapter(adapter);
         
         // Setup indicators
-        setupIndicators(images.length);
+        setupIndicators(imageUrls.size());
         vpProductImages.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -187,7 +169,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         });
         
         // Setup auto-scroll
-        setupAutoScroll(images.length);
+        setupAutoScroll(imageUrls.size());
     }
     
     private void setupAutoScroll(final int imageCount) {
