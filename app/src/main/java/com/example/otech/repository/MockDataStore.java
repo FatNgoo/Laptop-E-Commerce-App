@@ -985,6 +985,22 @@ public class MockDataStore {
         return allReviews;
     }
     
+    public ArrayList<Product> getProductsWithReviews() {
+        ArrayList<Product> productsWithReviews = new ArrayList<>();
+        for (Product product : products) {
+            if (productReviews.containsKey(product.getId()) && 
+                !productReviews.get(product.getId()).isEmpty()) {
+                productsWithReviews.add(product);
+            }
+        }
+        return productsWithReviews;
+    }
+    
+    public int getReviewCountForProduct(String productId) {
+        ArrayList<Review> reviews = getProductReviews(productId);
+        return reviews.size();
+    }
+    
     public boolean deleteReview(String reviewId) {
         for (ArrayList<Review> reviews : productReviews.values()) {
             for (Review review : reviews) {

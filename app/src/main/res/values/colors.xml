@@ -31,4 +31,6 @@
     <color name="success_green">#4CAF50</color>
     <color name="info_background">#FFFFFF</color>
     <color name="divider_color">#E0E0E0</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="colorAccent">#F44336</color>
 </resources>

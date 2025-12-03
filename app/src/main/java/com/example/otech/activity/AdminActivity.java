@@ -160,7 +160,7 @@ public class AdminActivity extends AppCompatActivity {
         });
 
         cardManageReviews.setOnClickListener(v -> {
-            Intent intent = new Intent(AdminActivity.this, ManageReviewsActivity.class);
+            Intent intent = new Intent(AdminActivity.this, AdminReviewsActivity.class);
             startActivity(intent);
         });
 
