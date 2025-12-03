@@ -8,6 +8,11 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"
         tools:ignore="ScopedStorage" />
+    
+    <!-- Permissions for image upload -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:allowBackup="true"
@@ -135,6 +140,12 @@
         <!-- Manage Reviews Activity -->
         <activity
             android:name=".activity.ManageReviewsActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminActivity" />
+        
+        <!-- Admin Banners Activity -->
+        <activity
+            android:name=".activity.AdminBannersActivity"
             android:exported="false"
             android:parentActivityName=".activity.AdminActivity" />
         

@@ -1,6 +1,7 @@
 package com.example.otech.repository;
 
 import com.example.otech.model.Address;
+import com.example.otech.model.Banner;
 import com.example.otech.model.CartItem;
 import com.example.otech.model.Notification;
 import com.example.otech.model.Order;
@@ -19,6 +20,7 @@ public class MockDataStore {
     private ArrayList<User> users;
     private ArrayList<Order> orders;
     private ArrayList<Notification> notifications;
+    private ArrayList<Banner> banners;
     private HashMap<String, ArrayList<CartItem>> userCarts; // userId -> CartItems
     private HashMap<String, ArrayList<Product>> userWishlists; // userId -> Products
     private HashMap<String, ArrayList<Address>> userAddresses; // userId -> Addresses
@@ -29,6 +31,7 @@ public class MockDataStore {
         users = new ArrayList<>();
         orders = new ArrayList<>();
         notifications = new ArrayList<>();
+        banners = new ArrayList<>();
         userCarts = new HashMap<>();
         userWishlists = new HashMap<>();
         userAddresses = new HashMap<>();
@@ -37,6 +40,7 @@ public class MockDataStore {
         initUsers();
         initProducts();
         initReviews();
+        initBanners();
     }
     
     public static synchronized MockDataStore getInstance() {
@@ -1043,5 +1047,99 @@ public class MockDataStore {
                 notification.setRead(true);
             }
         }
+    }
+    
+    // ==================== BANNER METHODS ====================
+    
+    private void initBanners() {
+        banners.add(new Banner("1", "banner1", "Laptop Gaming RTX 4060", "Gaming", true, 1));
+        banners.add(new Banner("2", "banner2", "Laptop Văn Phòng Giá Tốt", "Văn phòng", true, 2));
+        banners.add(new Banner("3", "banner3", "Macbook Pro M3 Mới Nhất", "Macbook CTO", true, 3));
+        banners.add(new Banner("4", "banner4", "Laptop AI - Tương Lai Của Công Nghệ", "Laptop AI", true, 4));
+        banners.add(new Banner("5", "banner5", "Laptop Sinh Viên - Ưu Đãi Khủng", "Sinh viên", true, 5));
+    }
+    
+    public ArrayList<Banner> getAllBanners() {
+        return new ArrayList<>(banners);
+    }
+    
+    public ArrayList<Banner> getActiveBanners() {
+        ArrayList<Banner> activeBanners = new ArrayList<>();
+        for (Banner banner : banners) {
+            if (banner.isActive()) {
+                activeBanners.add(banner);
+            }
+        }
+        // Sort by order ascending
+        activeBanners.sort((b1, b2) -> Integer.compare(b1.getOrder(), b2.getOrder()));
+        return activeBanners;
+    }
+    
+    public Banner getBannerById(String id) {
+        for (Banner banner : banners) {
+            if (banner.getId().equals(id)) {
+                return banner;
+            }
+        }
+        return null;
+    }
+    
+    public boolean addBanner(Banner banner) {
+        if (banner == null || banner.getId() == null || banner.getId().isEmpty()) {
+            return false;
+        }
+        
+        // Check if banner with same ID already exists
+        for (Banner b : banners) {
+            if (b.getId().equals(banner.getId())) {
+                return false;
+            }
+        }
+        
+        banners.add(banner);
+        return true;
+    }
+    
+    public boolean updateBanner(Banner updatedBanner) {
+        if (updatedBanner == null || updatedBanner.getId() == null) {
+            return false;
+        }
+        
+        for (int i = 0; i < banners.size(); i++) {
+            if (banners.get(i).getId().equals(updatedBanner.getId())) {
+                banners.set(i, updatedBanner);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public boolean deleteBanner(String id) {
+        if (id == null || id.isEmpty()) {
+            return false;
+        }
+        
+        for (int i = 0; i < banners.size(); i++) {
+            if (banners.get(i).getId().equals(id)) {
+                banners.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public String generateBannerId() {
+        int maxId = 0;
+        for (Banner banner : banners) {
+            try {
+                int id = Integer.parseInt(banner.getId());
+                if (id > maxId) {
+                    maxId = id;
+                }
+            } catch (NumberFormatException e) {
+                // Ignore non-numeric IDs
+            }
+        }
+        return String.valueOf(maxId + 1);
     }
 }

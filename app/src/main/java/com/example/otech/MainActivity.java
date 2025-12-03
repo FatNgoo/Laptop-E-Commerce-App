@@ -24,6 +24,7 @@ import com.example.otech.activity.WishlistActivity;
 import com.example.otech.adapter.BannerAdapter;
 import com.example.otech.adapter.CategoryAdapter;
 import com.example.otech.adapter.ProductAdapter;
+import com.example.otech.model.Banner;
 import com.example.otech.model.Category;
 import com.example.otech.model.Product;
 import com.example.otech.repository.MockDataStore;
@@ -94,25 +95,25 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     }
 
     private void setupBanner() {
-        // Real banner images
-        int[] bannerImages = {
-            R.drawable.banner1,
-            R.drawable.banner2,
-            R.drawable.banner3,
-            R.drawable.banner4,
-            R.drawable.banner5,
-            R.drawable.banner6
-        };
+        // Load active banners from MockDataStore
+        ArrayList<Banner> activeBanners = dataStore.getActiveBanners();
         
-        bannerAdapter = new BannerAdapter(this, bannerImages);
+        // If no banners, use default
+        if (activeBanners.isEmpty()) {
+            activeBanners = new ArrayList<>();
+            activeBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
+        }
+        
+        bannerAdapter = new BannerAdapter(this, activeBanners);
         viewPagerBanner.setAdapter(bannerAdapter);
         
         // Auto-scroll every 5 seconds
+        final int bannerCount = activeBanners.size();
         bannerHandler = new Handler(Looper.getMainLooper());
         bannerRunnable = new Runnable() {
             @Override
             public void run() {
-                if (currentBannerPosition == bannerImages.length) {
+                if (currentBannerPosition == bannerCount) {
                     currentBannerPosition = 0;
                 }
                 viewPagerBanner.setCurrentItem(currentBannerPosition++, true);

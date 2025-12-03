@@ -26,7 +26,7 @@ public class AdminActivity extends AppCompatActivity {
     private MaterialButton btnLogout;
     private TextView tvAdminName, tvTotalRevenue, tvTotalOrders, tvTotalProducts, tvTotalUsers;
     private TextView tvPendingOrders, tvShippingOrders, tvDeliveredOrders;
-    private MaterialCardView cardManageProducts, cardManageOrders, cardManageUsers, cardManageReviews;
+    private MaterialCardView cardManageProducts, cardManageOrders, cardManageUsers, cardManageReviews, cardManageBanners;
     private MockDataStore dataStore;
     private String currentUserId;
 
@@ -72,6 +72,7 @@ public class AdminActivity extends AppCompatActivity {
         cardManageOrders = findViewById(R.id.cardManageOrders);
         cardManageUsers = findViewById(R.id.cardManageUsers);
         cardManageReviews = findViewById(R.id.cardManageReviews);
+        cardManageBanners = findViewById(R.id.cardManageBanners);
 
         setSupportActionBar(toolbar);
     }
@@ -160,6 +161,11 @@ public class AdminActivity extends AppCompatActivity {
 
         cardManageReviews.setOnClickListener(v -> {
             Intent intent = new Intent(AdminActivity.this, ManageReviewsActivity.class);
+            startActivity(intent);
+        });
+
+        cardManageBanners.setOnClickListener(v -> {
+            Intent intent = new Intent(AdminActivity.this, AdminBannersActivity.class);
             startActivity(intent);
         });
     }
