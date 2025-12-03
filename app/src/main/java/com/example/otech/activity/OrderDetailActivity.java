@@ -385,20 +385,15 @@ public class OrderDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create geo URI to open in Google Maps
-        // Format: geo:0,0?q=address
-        String uri = "geo:0,0?q=" + android.net.Uri.encode(address);
-        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uri));
-        intent.setPackage("com.google.android.apps.maps"); // Force Google Maps
-
-        // Check if Google Maps is installed
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivity(intent);
-        } else {
-            // Fallback to web browser
-            String webUri = "https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(address);
-            intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
-            startActivity(intent);
-        }
+        // Open MapViewActivity to show address
+        android.content.Intent intent = new android.content.Intent(this, MapViewActivity.class);
+        intent.putExtra("address", address);
+        
+        // Mock coordinates for demonstration (in real app, use Geocoding API)
+        // For now, use center of Vietnam as default
+        intent.putExtra("latitude", 21.0285);
+        intent.putExtra("longitude", 105.8542);
+        
+        startActivity(intent);
     }
 }
