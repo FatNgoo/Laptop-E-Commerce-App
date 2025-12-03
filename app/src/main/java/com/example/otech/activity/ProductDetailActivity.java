@@ -51,7 +51,7 @@ public class ProductDetailActivity extends AppCompatActivity {
     private TextView tvRating5Count, tvRating4Count, tvRating3Count, tvRating2Count, tvRating1Count;
     private android.widget.ProgressBar pbRating5, pbRating4, pbRating3, pbRating2, pbRating1;
     private RatingBar ratingBar, rbAverageRating;
-    private MaterialButton btnAddToCart, btnBuyNow, btnWriteReview;
+    private MaterialButton btnAddToCart, btnBuyNow, btnWriteReview, btnToggleDescription;
     private RecyclerView rvReviews, rvRelatedProducts;
     private LinearLayout layoutAvailableButtons;
     private MaterialCardView cardOutOfStock;
@@ -60,6 +60,7 @@ public class ProductDetailActivity extends AppCompatActivity {
     private MockDataStore dataStore;
     private String currentUserId;
     private int quantity = 1;
+    private boolean isDescriptionExpanded = false;
     
     // Auto-scroll variables
     private Handler autoScrollHandler;
@@ -113,6 +114,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         ratingBar = findViewById(R.id.ratingBar);
         btnAddToCart = findViewById(R.id.btnAddToCart);
         btnBuyNow = findViewById(R.id.btnBuyNow);
+        btnToggleDescription = findViewById(R.id.btnToggleDescription);
         
         // Reviews section
         tvAverageRating = findViewById(R.id.tvAverageRating);
@@ -466,6 +468,24 @@ public class ProductDetailActivity extends AppCompatActivity {
             Intent intent = new Intent(this, CartActivity.class);
             startActivity(intent);
         });
+
+        btnToggleDescription.setOnClickListener(v -> {
+            toggleDescription();
+        });
+    }
+
+    private void toggleDescription() {
+        if (isDescriptionExpanded) {
+            // Collapse description
+            tvDescription.setMaxLines(4);
+            btnToggleDescription.setText("Xem thêm");
+            isDescriptionExpanded = false;
+        } else {
+            // Expand description
+            tvDescription.setMaxLines(Integer.MAX_VALUE);
+            btnToggleDescription.setText("Xem bớt");
+            isDescriptionExpanded = true;
+        }
     }
 
     private void toggleFavorite() {

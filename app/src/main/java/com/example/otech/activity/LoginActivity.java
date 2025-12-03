@@ -22,6 +22,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextInputEditText etUsername, etPassword;
     private MaterialButton btnLogin;
     private TextView tvRegister, tvForgotPassword;
+    private com.google.android.material.card.MaterialCardView btnGoogleLogin, btnFacebookLogin;
     private MockDataStore dataStore;
     private SharedPreferences sharedPreferences;
 
@@ -50,6 +51,8 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         tvRegister = findViewById(R.id.tvRegister);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
+        btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
+        btnFacebookLogin = findViewById(R.id.btnFacebookLogin);
     }
 
     private void setupListeners() {
@@ -63,6 +66,14 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
+        });
+        
+        btnGoogleLogin.setOnClickListener(v -> {
+            Toast.makeText(this, "Tính năng đăng nhập Google đang phát triển", Toast.LENGTH_SHORT).show();
+        });
+        
+        btnFacebookLogin.setOnClickListener(v -> {
+            Toast.makeText(this, "Tính năng đăng nhập Facebook đang phát triển", Toast.LENGTH_SHORT).show();
         });
     }
 

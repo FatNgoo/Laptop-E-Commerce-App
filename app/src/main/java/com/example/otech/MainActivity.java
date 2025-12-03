@@ -158,8 +158,8 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             promotionProducts = new ArrayList<>(promotionProducts.subList(0, 10));
         }
         
-        // Display as grid 2 columns
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
+        // Display as horizontal scrolling list (1 row)
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rvPromotionProducts.setLayoutManager(layoutManager);
         
         promotionProductsAdapter = new ProductAdapter(this, promotionProducts, this);
