@@ -65,7 +65,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 iconRes = R.drawable.ic_check;
                 break;
             case "ORDER_SHIPPING":
-                iconRes = R.drawable.ic_list;
+                iconRes = R.drawable.ic_delivery;
                 break;
             case "ORDER_DELIVERED":
                 iconRes = R.drawable.ic_check;
