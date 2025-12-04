@@ -148,10 +148,7 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
                 } else if (checkedId == R.id.chip3Star) {
                     currentMinRating = 3.0f;
                 } else if (checkedId == R.id.chipLow) {
-                    currentMinRating = 0.1f;
-                    // Special case: filter products with rating < 3
-                    filterLowRating();
-                    return;
+                    currentMinRating = -1.0f; // Special flag for < 3
                 }
             }
             
@@ -160,18 +157,41 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     }
 
     private void applyFilters() {
-        adapter.filter(currentSearchQuery, currentMinRating, currentBrand);
-        updateEmptyState();
+        // Special case for "< 3 stars"
+        if (currentMinRating == -1.0f) {
+            filterLowRating();
+        } else {
+            // Reset to full dataset before filtering
+            adapter.updateData(allProducts);
+            adapter.filter(currentSearchQuery, currentMinRating, currentBrand);
+            updateEmptyState();
+        }
     }
 
     private void filterLowRating() {
-        ArrayList<Product> lowRatingProducts = new ArrayList<>();
+        // Reset to full dataset first
+        adapter.updateData(allProducts);
+        
+        // Apply custom filter for rating < 3
+        String lowerCaseQuery = currentSearchQuery.toLowerCase().trim();
+        ArrayList<Product> filtered = new ArrayList<>();
+        
         for (Product product : allProducts) {
-            if (product.getRating() < 3.0f) {
-                lowRatingProducts.add(product);
+            boolean matchesSearch = currentSearchQuery.isEmpty() || 
+                product.getName().toLowerCase().contains(lowerCaseQuery) ||
+                product.getBrand().toLowerCase().contains(lowerCaseQuery);
+            
+            boolean matchesRating = product.getRating() < 3.0f;
+            
+            boolean matchesBrand = (currentBrand == null || currentBrand.isEmpty()) ||
+                product.getBrand().equalsIgnoreCase(currentBrand);
+            
+            if (matchesSearch && matchesRating && matchesBrand) {
+                filtered.add(product);
             }
         }
-        adapter.updateData(lowRatingProducts);
+        
+        adapter.updateData(filtered);
         updateEmptyState();
     }
 
