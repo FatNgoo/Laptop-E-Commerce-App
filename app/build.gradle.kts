@@ -48,6 +48,12 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    
+    // Gson for Room TypeConverter
+    implementation("com.google.code.gson:gson:2.10.1")
     
     // Firebase dependencies - disabled for mock app
     // implementation(platform("com.google.firebase:firebase-bom:34.6.0"))

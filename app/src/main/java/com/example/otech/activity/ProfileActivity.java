@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.otech.MainActivity;
 import com.example.otech.R;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -25,7 +25,7 @@ public class ProfileActivity extends AppCompatActivity {
                          layoutChangePassword, layoutSupport, layoutTerms, layoutLogout;
     private BottomNavigationView bottomNavigation;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private SharedPreferences sharedPreferences;
 
     @Override
@@ -33,7 +33,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
 
         initViews();
@@ -89,12 +89,20 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void loadUserInfo() {
         String username = sharedPreferences.getString(Constants.KEY_USERNAME, "");
-        User user = dataStore.getUserByUsername(username);
-        
-        if (user != null) {
-            tvUserName.setText(user.getFullName());
-            tvUserEmail.setText(user.getEmail());
-        }
+        repository.getUserByUsername(username, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                if (user != null) {
+                    tvUserName.setText(user.getFullName());
+                    tvUserEmail.setText(user.getEmail());
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                // Silent fail for profile load
+            }
+        });
     }
 
     private void setupListeners() {

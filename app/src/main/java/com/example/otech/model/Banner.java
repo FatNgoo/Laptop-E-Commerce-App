@@ -1,8 +1,15 @@
 package com.example.otech.model;
 
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
 import java.io.Serializable;
 
+@Entity(tableName = "banners")
 public class Banner implements Serializable {
+    @PrimaryKey
+    @NonNull
     private String id;
     private String imageUrl;
     private String title;
@@ -13,6 +20,7 @@ public class Banner implements Serializable {
     public Banner() {
     }
 
+    @Ignore
     public Banner(String id, String imageUrl, String title, String link, boolean isActive, int order) {
         this.id = id;
         this.imageUrl = imageUrl;

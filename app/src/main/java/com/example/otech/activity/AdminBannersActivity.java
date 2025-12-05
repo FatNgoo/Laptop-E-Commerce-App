@@ -24,13 +24,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.BannerAdminAdapter;
 import com.example.otech.model.Banner;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class AdminBannersActivity extends AppCompatActivity implements BannerAdminAdapter.OnBannerActionListener {
 
@@ -41,7 +42,7 @@ public class AdminBannersActivity extends AppCompatActivity implements BannerAdm
     private TextView tvTotalBanners, tvActiveBanners, tvInactiveBanners;
     private LinearLayout layoutEmpty;
 
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private BannerAdminAdapter adapter;
     private ArrayList<Banner> banners;
     
@@ -56,7 +57,7 @@ public class AdminBannersActivity extends AppCompatActivity implements BannerAdm
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_banners);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         setupImagePicker();
         setupPermissionLauncher();
@@ -160,10 +161,21 @@ public class AdminBannersActivity extends AppCompatActivity implements BannerAdm
     }
 
     private void loadBanners() {
-        banners = dataStore.getAllBanners();
-        adapter.updateData(banners);
-        updateStatistics();
-        updateEmptyState();
+        repository.getAllBanners(new DataRepository.DataCallback<java.util.List<Banner>>() {
+            @Override
+            public void onSuccess(java.util.List<Banner> data) {
+                banners.clear();
+                banners.addAll(data);
+                adapter.updateData(banners);
+                updateStatistics();
+                updateEmptyState();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AdminBannersActivity.this, "Không thể tải danh sách banner", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateStatistics() {
@@ -284,28 +296,36 @@ public class AdminBannersActivity extends AppCompatActivity implements BannerAdm
                 banner.setOrder(order);
                 banner.setImageUrl(imageUrl);
                 banner.setActive(isActive);
-                
-                boolean success = dataStore.updateBanner(banner);
-                if (success) {
-                    Toast.makeText(this, "Cập nhật banner thành công", Toast.LENGTH_SHORT).show();
-                    loadBanners();
-                    dialog.dismiss();
-                } else {
-                    Toast.makeText(this, "Cập nhật banner thất bại", Toast.LENGTH_SHORT).show();
-                }
+                repository.updateBanner(banner, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AdminBannersActivity.this, "Cập nhật banner thành công", Toast.LENGTH_SHORT).show();
+                        loadBanners();
+                        dialog.dismiss();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(AdminBannersActivity.this, "Cập nhật banner thất bại", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
                 // Add new banner
-                String id = dataStore.generateBannerId();
+                String id = UUID.randomUUID().toString();
                 Banner newBanner = new Banner(id, imageUrl, title, link, isActive, order);
-                
-                boolean success = dataStore.addBanner(newBanner);
-                if (success) {
-                    Toast.makeText(this, "Thêm banner thành công", Toast.LENGTH_SHORT).show();
-                    loadBanners();
-                    dialog.dismiss();
-                } else {
-                    Toast.makeText(this, "Thêm banner thất bại", Toast.LENGTH_SHORT).show();
-                }
+                repository.insertBanner(newBanner, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AdminBannersActivity.this, "Thêm banner thành công", Toast.LENGTH_SHORT).show();
+                        loadBanners();
+                        dialog.dismiss();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(AdminBannersActivity.this, "Thêm banner thất bại", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         
@@ -378,13 +398,18 @@ public class AdminBannersActivity extends AppCompatActivity implements BannerAdm
                 .setTitle("Xác nhận xóa")
                 .setMessage("Bạn có chắc muốn xóa banner \"" + banner.getTitle() + "\"?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    boolean success = dataStore.deleteBanner(banner.getId());
-                    if (success) {
-                        Toast.makeText(this, "Xóa banner thành công", Toast.LENGTH_SHORT).show();
-                        loadBanners();
-                    } else {
-                        Toast.makeText(this, "Xóa banner thất bại", Toast.LENGTH_SHORT).show();
-                    }
+                    repository.deleteBanner(banner.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(AdminBannersActivity.this, "Xóa banner thành công", Toast.LENGTH_SHORT).show();
+                            loadBanners();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(AdminBannersActivity.this, "Xóa banner thất bại", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

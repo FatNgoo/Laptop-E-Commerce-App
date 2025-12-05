@@ -15,8 +15,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.OrderAdapter;
 import com.example.otech.model.Order;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
+
+import java.util.List;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ public class OrderHistoryActivity extends AppCompatActivity implements OrderAdap
     private RecyclerView rvOrders;
     private LinearLayout layoutEmptyOrders;
     private OrderAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private String currentUserId;
 
     @Override
@@ -45,7 +47,7 @@ public class OrderHistoryActivity extends AppCompatActivity implements OrderAdap
             return;
         }
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
 
         initViews();
         setupToolbar();
@@ -65,18 +67,28 @@ public class OrderHistoryActivity extends AppCompatActivity implements OrderAdap
     }
 
     private void loadOrders() {
-        ArrayList<Order> orders = dataStore.getUserOrders(currentUserId);
+        repository.getUserOrders(currentUserId, new DataRepository.DataCallback<List<Order>>() {
+            @Override
+            public void onSuccess(List<Order> orders) {
+                if (orders.isEmpty()) {
+                    layoutEmptyOrders.setVisibility(View.VISIBLE);
+                    rvOrders.setVisibility(View.GONE);
+                } else {
+                    layoutEmptyOrders.setVisibility(View.GONE);
+                    rvOrders.setVisibility(View.VISIBLE);
 
-        if (orders.isEmpty()) {
-            layoutEmptyOrders.setVisibility(View.VISIBLE);
-            rvOrders.setVisibility(View.GONE);
-        } else {
-            layoutEmptyOrders.setVisibility(View.GONE);
-            rvOrders.setVisibility(View.VISIBLE);
-
-            adapter = new OrderAdapter(orders, this);
-            rvOrders.setAdapter(adapter);
-        }
+                    adapter = new OrderAdapter(new ArrayList<>(orders), OrderHistoryActivity.this);
+                    rvOrders.setAdapter(adapter);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(OrderHistoryActivity.this, "Không tải được danh sách đơn hàng", Toast.LENGTH_SHORT).show();
+                layoutEmptyOrders.setVisibility(View.VISIBLE);
+                rvOrders.setVisibility(View.GONE);
+            }
+        });
     }
 
     @Override
@@ -98,13 +110,18 @@ public class OrderHistoryActivity extends AppCompatActivity implements OrderAdap
                 .setTitle("Hủy đơn hàng")
                 .setMessage("Bạn có chắc muốn hủy đơn hàng này?")
                 .setPositiveButton("Hủy đơn", (dialog, which) -> {
-                    boolean success = dataStore.cancelOrder(order.getId(), "Khách hàng yêu cầu hủy");
-                    if (success) {
-                        Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                        loadOrders(); // Reload orders
-                    } else {
-                        Toast.makeText(this, "Không thể hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                    }
+                    repository.cancelOrder(order.getId(), "Khách hàng yêu cầu hủy", new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(OrderHistoryActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                            loadOrders(); // Reload orders
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(OrderHistoryActivity.this, "Không thể hủy đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Không", null)
                 .show();

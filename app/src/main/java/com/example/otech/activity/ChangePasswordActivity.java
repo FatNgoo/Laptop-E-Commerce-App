@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.otech.R;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -20,7 +20,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
     private TextInputEditText etCurrentPassword, etNewPassword, etConfirmPassword;
     private MaterialButton btnChangePassword;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private String currentUsername;
 
     @Override
@@ -28,7 +28,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_change_password);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         currentUsername = prefs.getString(Constants.KEY_USERNAME, "");
@@ -82,14 +82,37 @@ public class ChangePasswordActivity extends AppCompatActivity {
         }
 
         // Verify current password
-        User user = dataStore.getUserByUsername(currentUsername);
-        if (user != null && user.getPassword().equals(currentPassword)) {
-            user.setPassword(newPassword);
-            Toast.makeText(this, "Đổi mật khẩu thành công", Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            etCurrentPassword.setError("Mật khẩu hiện tại không đúng");
-            etCurrentPassword.requestFocus();
-        }
+        btnChangePassword.setEnabled(false);
+        repository.getUserByUsername(currentUsername, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                if (user != null && user.getPassword().equals(currentPassword)) {
+                    user.setPassword(newPassword);
+                    repository.updateUser(user, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ChangePasswordActivity.this, "Đổi mật khẩu thành công", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            btnChangePassword.setEnabled(true);
+                            Toast.makeText(ChangePasswordActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    btnChangePassword.setEnabled(true);
+                    etCurrentPassword.setError("Mật khẩu hiện tại không đúng");
+                    etCurrentPassword.requestFocus();
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                btnChangePassword.setEnabled(true);
+                Toast.makeText(ChangePasswordActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

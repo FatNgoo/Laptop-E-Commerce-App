@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.otech.R;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -23,7 +23,7 @@ public class ProductReviewAdapter extends RecyclerView.Adapter<ProductReviewAdap
     private ArrayList<Product> products;
     private ArrayList<Product> productsFiltered;
     private OnProductClickListener listener;
-    private MockDataStore dataStore;
+    private DataRepository repository;
 
     public interface OnProductClickListener {
         void onProductClick(Product product);
@@ -34,7 +34,7 @@ public class ProductReviewAdapter extends RecyclerView.Adapter<ProductReviewAdap
         this.products = products;
         this.productsFiltered = new ArrayList<>(products);
         this.listener = listener;
-        this.dataStore = MockDataStore.getInstance();
+        this.repository = DataRepository.getInstance(context.getApplicationContext());
     }
 
     @NonNull
@@ -57,9 +57,18 @@ public class ProductReviewAdapter extends RecyclerView.Adapter<ProductReviewAdap
         // Rating
         holder.tvRating.setText(String.format(Locale.getDefault(), "%.1f", product.getRating()));
         
-        // Review count
-        int reviewCount = dataStore.getReviewCountForProduct(product.getId());
-        holder.tvReviewCount.setText(String.format("(%d đánh giá)", reviewCount));
+        // Review count - load async
+        repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<com.example.otech.model.Review>>() {
+            @Override
+            public void onSuccess(java.util.List<com.example.otech.model.Review> reviews) {
+                holder.tvReviewCount.setText(String.format("(%d đánh giá)", reviews.size()));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                holder.tvReviewCount.setText("(0 đánh giá)");
+            }
+        });
         
         // Click listener
         holder.itemView.setOnClickListener(v -> {

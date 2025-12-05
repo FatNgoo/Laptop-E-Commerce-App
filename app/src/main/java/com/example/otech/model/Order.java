@@ -1,10 +1,21 @@
 package com.example.otech.model;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+import androidx.annotation.NonNull;
+
+import com.example.otech.database.Converters;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 
+@Entity(tableName = "orders")
+@TypeConverters(Converters.class)
 public class Order implements Serializable {
+    @PrimaryKey
+    @NonNull
     private String id;
     private String userId;
     private ArrayList<CartItem> items;
@@ -33,8 +44,9 @@ public class Order implements Serializable {
     }
 
     // Getters and Setters
+    @NonNull
     public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }

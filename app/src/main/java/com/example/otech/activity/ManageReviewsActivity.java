@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.ReviewAdapter;
 import com.example.otech.model.Review;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public class ManageReviewsActivity extends AppCompatActivity {
     private RecyclerView rvReviews;
     private LinearLayout layoutEmptyState;
     private ReviewAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ArrayList<Review> allReviews;
 
     @Override
@@ -32,7 +32,7 @@ public class ManageReviewsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_reviews);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         initViews();
         setupToolbar();
@@ -56,31 +56,38 @@ public class ManageReviewsActivity extends AppCompatActivity {
     }
 
     private void loadReviews() {
-        allReviews = dataStore.getAllReviews();
+        repository.getAllReviews(new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                allReviews = new ArrayList<>(reviews);
 
-        if (allReviews.isEmpty()) {
-            rvReviews.setVisibility(View.GONE);
-            layoutEmptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvReviews.setVisibility(View.VISIBLE);
-            layoutEmptyState.setVisibility(View.GONE);
+                if (allReviews.isEmpty()) {
+                    rvReviews.setVisibility(View.GONE);
+                    layoutEmptyState.setVisibility(View.VISIBLE);
+                } else {
+                    rvReviews.setVisibility(View.VISIBLE);
+                    layoutEmptyState.setVisibility(View.GONE);
 
-            adapter = new ReviewAdapter(this, allReviews, true, new ReviewAdapter.OnReviewActionListener() {
-                @Override
-                public void onDeleteReview(Review review, int position) {
-                    showDeleteConfirmation(review, position);
+                    adapter = new ReviewAdapter(ManageReviewsActivity.this, allReviews, true, new ReviewAdapter.OnReviewActionListener() {
+                        @Override
+                        public void onDeleteReview(Review review, int position) {
+                            showDeleteConfirmation(review, position);
+                        }
+
+                        @Override
+                        public void onViewProduct(Review review) {
+                            // Navigate to product detail
+                            Intent intent = new Intent(ManageReviewsActivity.this, ProductDetailActivity.class);
+                            intent.putExtra("productId", review.getProductId());
+                            startActivity(intent);
+                        }
+                    });
+                    rvReviews.setAdapter(adapter);
                 }
-
-                @Override
-                public void onViewProduct(Review review) {
-                    // Navigate to product detail
-                    Intent intent = new Intent(ManageReviewsActivity.this, ProductDetailActivity.class);
-                    intent.putExtra("productId", review.getProductId());
-                    startActivity(intent);
-                }
-            });
-            rvReviews.setAdapter(adapter);
-        }
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     private void showDeleteConfirmation(Review review, int position) {
@@ -88,19 +95,25 @@ public class ManageReviewsActivity extends AppCompatActivity {
                 .setTitle("Xóa đánh giá")
                 .setMessage("Bạn có chắc muốn xóa đánh giá này?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    boolean success = dataStore.deleteReview(review.getId());
-                    if (success) {
-                        allReviews.remove(position);
-                        adapter.notifyItemRemoved(position);
-                        android.widget.Toast.makeText(this, "Đã xóa đánh giá", android.widget.Toast.LENGTH_SHORT).show();
-                        
-                        if (allReviews.isEmpty()) {
-                            rvReviews.setVisibility(View.GONE);
-                            layoutEmptyState.setVisibility(View.VISIBLE);
+                    repository.deleteReview(review, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            if (position >= 0 && position < allReviews.size()) {
+                                allReviews.remove(position);
+                                adapter.notifyItemRemoved(position);
+                            }
+                            android.widget.Toast.makeText(ManageReviewsActivity.this, "Đã xóa đánh giá", android.widget.Toast.LENGTH_SHORT).show();
+                            
+                            if (allReviews.isEmpty()) {
+                                rvReviews.setVisibility(View.GONE);
+                                layoutEmptyState.setVisibility(View.VISIBLE);
+                            }
                         }
-                    } else {
-                        android.widget.Toast.makeText(this, "Lỗi xóa đánh giá", android.widget.Toast.LENGTH_SHORT).show();
-                    }
+                        @Override
+                        public void onError(Exception e) {
+                            android.widget.Toast.makeText(ManageReviewsActivity.this, "Lỗi xóa đánh giá", android.widget.Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

@@ -21,7 +21,7 @@ import com.example.otech.adapter.ReviewAdapter;
 import com.example.otech.model.Product;
 import com.example.otech.model.Review;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.example.otech.util.FormatUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -57,7 +57,7 @@ public class ProductDetailActivity extends AppCompatActivity {
     private MaterialCardView cardOutOfStock;
 
     private Product product;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private String currentUserId;
     private int quantity = 1;
     private boolean isDescriptionExpanded = false;
@@ -72,7 +72,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_detail);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
         
         // Get current user
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -236,14 +236,17 @@ public class ProductDetailActivity extends AppCompatActivity {
     }
     
     private void loadReviews() {
-        ArrayList<Review> allReviews = dataStore.getProductReviews(product.getId());
+        repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                ArrayList<Review> allReviews = new ArrayList<>(reviews);
         
         if (!allReviews.isEmpty()) {
             // Show only first 5 reviews initially
             int maxReviews = Math.min(5, allReviews.size());
             ArrayList<Review> displayedReviews = new ArrayList<>(allReviews.subList(0, maxReviews));
             
-            ReviewAdapter adapter = new ReviewAdapter(this, displayedReviews);
+            ReviewAdapter adapter = new ReviewAdapter(ProductDetailActivity.this, displayedReviews);
             rvReviews.setAdapter(adapter);
             rvReviews.setVisibility(View.VISIBLE);
             
@@ -253,7 +256,7 @@ public class ProductDetailActivity extends AppCompatActivity {
                 btnViewMore.setVisibility(View.VISIBLE);
                 btnViewMore.setOnClickListener(v -> {
                     // Show all reviews
-                    ReviewAdapter fullAdapter = new ReviewAdapter(this, allReviews);
+                    ReviewAdapter fullAdapter = new ReviewAdapter(ProductDetailActivity.this, allReviews);
                     rvReviews.setAdapter(fullAdapter);
                     btnViewMore.setVisibility(View.GONE);
                 });
@@ -289,6 +292,20 @@ public class ProductDetailActivity extends AppCompatActivity {
             // Reset rating breakdown
             updateRatingBreakdown(new int[6], 0);
         }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Handle error - show empty state
+                rvReviews.setVisibility(View.GONE);
+                MaterialButton btnViewMore = findViewById(R.id.btnViewMoreReviews);
+                btnViewMore.setVisibility(View.GONE);
+                tvAverageRating.setText("Chưa có");
+                rbAverageRating.setRating(0);
+                tvTotalReviews.setText("Chưa có đánh giá");
+                updateRatingBreakdown(new int[6], 0);
+            }
+        });
     }
     
     private void updateRatingBreakdown(int[] ratingCounts, int totalReviews) {
@@ -402,11 +419,26 @@ public class ProductDetailActivity extends AppCompatActivity {
     }
 
     private void updateFavoriteIcon() {
-        if (!currentUserId.isEmpty() && dataStore.isInWishlist(currentUserId, product.getId())) {
-            fabFavorite.setImageResource(R.drawable.ic_favorite_filled);
-        } else {
+        if (currentUserId.isEmpty()) {
             fabFavorite.setImageResource(R.drawable.ic_favorite_border);
+            return;
         }
+        
+        repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isInWishlist) {
+                if (isInWishlist) {
+                    fabFavorite.setImageResource(R.drawable.ic_favorite_filled);
+                } else {
+                    fabFavorite.setImageResource(R.drawable.ic_favorite_border);
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                fabFavorite.setImageResource(R.drawable.ic_favorite_border);
+            }
+        });
     }
     
     private void checkStockAvailability() {
@@ -432,12 +464,31 @@ public class ProductDetailActivity extends AppCompatActivity {
                 return;
             }
             
-            if (dataStore.hasUserReviewedProduct(currentUserId, product.getId())) {
-                Toast.makeText(this, "Bạn đã đánh giá sản phẩm này rồi", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            showWriteReviewDialog();
+            // Check if user has already reviewed (load reviews and check userId)
+            repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<Review>>() {
+                @Override
+                public void onSuccess(java.util.List<Review> reviews) {
+                    boolean hasReviewed = false;
+                    for (Review r : reviews) {
+                        if (r.getUserId().equals(currentUserId)) {
+                            hasReviewed = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasReviewed) {
+                        Toast.makeText(ProductDetailActivity.this, "Bạn đã đánh giá sản phẩm này rồi", Toast.LENGTH_SHORT).show();
+                    } else {
+                        showWriteReviewDialog();
+                    }
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    // On error, allow review
+                    showWriteReviewDialog();
+                }
+            });
         });
 
         btnAddToCart.setOnClickListener(v -> {
@@ -447,12 +498,24 @@ public class ProductDetailActivity extends AppCompatActivity {
             }
 
             // Directly add 1 item to cart (no bottom sheet)
-            boolean success = dataStore.addToCart(currentUserId, product, 1);
-            if (success) {
-                Toast.makeText(this, "Đã thêm 1 sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Có lỗi xảy ra khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-            }
+            com.example.otech.model.CartItem cartItem = new com.example.otech.model.CartItem(
+                java.util.UUID.randomUUID().toString(),
+                currentUserId,
+                product,
+                1
+            );
+            
+            repository.addToCart(cartItem, new DataRepository.VoidCallback() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(ProductDetailActivity.this, "Đã thêm 1 sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         btnBuyNow.setOnClickListener(v -> {
@@ -462,11 +525,26 @@ public class ProductDetailActivity extends AppCompatActivity {
             }
             
             // Add to cart first
-            dataStore.addToCart(currentUserId, product, 1);
+            com.example.otech.model.CartItem cartItem = new com.example.otech.model.CartItem(
+                java.util.UUID.randomUUID().toString(),
+                currentUserId,
+                product,
+                1
+            );
             
-            // Navigate to cart for checkout
-            Intent intent = new Intent(this, CartActivity.class);
-            startActivity(intent);
+            repository.addToCart(cartItem, new DataRepository.VoidCallback() {
+                @Override
+                public void onSuccess() {
+                    // Navigate to cart for checkout
+                    Intent intent = new Intent(ProductDetailActivity.this, CartActivity.class);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         btnToggleDescription.setOnClickListener(v -> {
@@ -494,23 +572,60 @@ public class ProductDetailActivity extends AppCompatActivity {
             return;
         }
 
-        boolean isInWishlist = dataStore.isInWishlist(currentUserId, product.getId());
-        
-        if (isInWishlist) {
-            dataStore.removeFromWishlist(currentUserId, product.getId());
-            Toast.makeText(this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
-        } else {
-            dataStore.addToWishlist(currentUserId, product);
-            Toast.makeText(this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
-        }
-        
-        updateFavoriteIcon();
+        repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isInWishlist) {
+                if (isInWishlist) {
+                    repository.removeFromWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ProductDetailActivity.this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
+                            updateFavoriteIcon();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    repository.addToWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ProductDetailActivity.this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
+                            updateFavoriteIcon();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void setupRelatedProducts() {
-        ArrayList<Product> relatedProducts = dataStore.getRelatedProducts(product.getId(), 10);
+        repository.getAllProducts(new DataRepository.DataCallback<java.util.List<Product>>() {
+            @Override
+            public void onSuccess(java.util.List<Product> products) {
+                // Filter related products by category, exclude current product
+                ArrayList<Product> relatedProducts = new ArrayList<>();
+                for (Product p : products) {
+                    if (!p.getId().equals(product.getId()) && 
+                        p.getCategory().equals(product.getCategory())) {
+                        relatedProducts.add(p);
+                        if (relatedProducts.size() >= 10) break;
+                    }
+                }
         
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(ProductDetailActivity.this, LinearLayoutManager.HORIZONTAL, false);
         rvRelatedProducts.setLayoutManager(layoutManager);
         
         RelatedProductAdapter adapter = new RelatedProductAdapter(relatedProducts, product -> {
@@ -522,6 +637,14 @@ public class ProductDetailActivity extends AppCompatActivity {
         });
         
         rvRelatedProducts.setAdapter(adapter);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Hide related products section on error
+                rvRelatedProducts.setVisibility(View.GONE);
+            }
+        });
     }
     
     private void showWriteReviewDialog() {
@@ -551,19 +674,46 @@ public class ProductDetailActivity extends AppCompatActivity {
                 return;
             }
             
-            User user = dataStore.getUserById(currentUserId);
-            String userName = user != null ? user.getFullName() : "Người dùng";
-            
-            dataStore.addReview(product.getId(), currentUserId, userName, rating, comment);
-            
-            Toast.makeText(this, "Đã gửi đánh giá thành công", Toast.LENGTH_SHORT).show();
-            
-            // Reload reviews and product info
-            loadReviews();
-            tvRating.setText(String.format("%.1f", product.getRating()));
-            ratingBar.setRating(product.getRating());
-            
-            dialog.dismiss();
+            repository.getUserById(currentUserId, new DataRepository.DataCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    String userName = user != null ? user.getFullName() : "Người dùng";
+                    
+                    // Create and insert review
+                    Review review = new Review(
+                        java.util.UUID.randomUUID().toString(),
+                        product.getId(),
+                        currentUserId,
+                        userName,
+                        rating,
+                        comment
+                    );
+                    
+                    repository.insertReview(review, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ProductDetailActivity.this, "Đã gửi đánh giá thành công", Toast.LENGTH_SHORT).show();
+                            
+                            // Reload reviews and product info
+                            loadReviews();
+                            tvRating.setText(String.format("%.1f", product.getRating()));
+                            ProductDetailActivity.this.ratingBar.setRating(product.getRating());
+                            
+                            dialog.dismiss();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ProductDetailActivity.this, "Có lỗi khi gửi đánh giá", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
         
         dialog.show();

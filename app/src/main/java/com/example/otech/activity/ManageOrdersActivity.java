@@ -14,12 +14,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.OrderAdapter;
 import com.example.otech.model.Order;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ManageOrdersActivity extends AppCompatActivity implements OrderAdapter.OnOrderActionListener {
 
@@ -28,7 +29,7 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
     private LinearLayout layoutEmptyOrders;
     private ChipGroup chipGroupStatus;
     private OrderAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ArrayList<Order> allOrders;
     private ArrayList<Order> filteredOrders;
 
@@ -37,7 +38,7 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_orders);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         initViews();
         setupRecyclerView();
@@ -81,9 +82,20 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
     }
 
     private void loadOrders() {
-        allOrders = dataStore.getAllOrders();
-        filteredOrders = new ArrayList<>(allOrders);
-        updateOrdersList();
+        allOrders = new ArrayList<>();
+        repository.getAllOrders(new DataRepository.DataCallback<List<Order>>() {
+            @Override
+            public void onSuccess(List<Order> orders) {
+                allOrders.clear();
+                allOrders.addAll(orders);
+                filteredOrders = new ArrayList<>(allOrders);
+                updateOrdersList();
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(ManageOrdersActivity.this, "Lỗi tải dữ liệu", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void filterOrders(String status) {
@@ -161,28 +173,39 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
     }
 
     private void updateOrderStatus(Order order, String newStatus) {
-        if (newStatus.equals(Constants.ORDER_STATUS_CANCELLED)) {
-            // If cancelling, ask for reason
+        if (Constants.ORDER_STATUS_CANCELLED.equals(newStatus)) {
+            // If cancelling, use repository.cancelOrder
             new AlertDialog.Builder(this)
                     .setTitle("Lý do hủy đơn")
                     .setMessage("Nhập lý do hủy đơn hàng")
                     .setPositiveButton("Xác nhận", (dialog, which) -> {
-                        boolean success = dataStore.cancelOrder(order.getId(), "Admin hủy đơn");
-                        if (success) {
-                            Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                            loadOrders();
-                        }
+                        repository.cancelOrder(order.getId(), "Admin hủy đơn", new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(ManageOrdersActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                                loadOrders();
+                            }
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(ManageOrdersActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     })
                     .setNegativeButton("Hủy", null)
                     .show();
         } else {
-            boolean success = dataStore.updateOrderStatus(order.getId(), newStatus);
-            if (success) {
-                Toast.makeText(this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
-                loadOrders();
-            } else {
-                Toast.makeText(this, "Không thể cập nhật", Toast.LENGTH_SHORT).show();
-            }
+            order.setStatus(newStatus);
+            repository.updateOrder(order, new DataRepository.VoidCallback() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(ManageOrdersActivity.this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
+                    loadOrders();
+                }
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(ManageOrdersActivity.this, "Không thể cập nhật", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 

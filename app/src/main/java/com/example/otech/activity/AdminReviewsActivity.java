@@ -14,7 +14,7 @@ import com.example.otech.R;
 import com.example.otech.adapter.ProductReviewAdapter;
 import com.example.otech.model.Product;
 import com.example.otech.model.Review;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -32,7 +32,7 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     private View layoutEmpty;
     
     private ProductReviewAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ArrayList<Product> allProducts;
     private String currentSearchQuery = "";
     private float currentMinRating = 0;
@@ -43,7 +43,7 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_reviews);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
         
         initViews();
         setupToolbar();
@@ -72,12 +72,18 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     }
 
     private void setupRecyclerView() {
-        allProducts = dataStore.getAllProducts();
-        adapter = new ProductReviewAdapter(this, allProducts, this);
-        rvProducts.setLayoutManager(new LinearLayoutManager(this));
-        rvProducts.setAdapter(adapter);
-        
-        updateEmptyState();
+        repository.getAllProducts(new DataRepository.DataCallback<java.util.List<Product>>() {
+            @Override
+            public void onSuccess(java.util.List<Product> products) {
+                allProducts = new ArrayList<>(products);
+                adapter = new ProductReviewAdapter(AdminReviewsActivity.this, allProducts, AdminReviewsActivity.this);
+                rvProducts.setLayoutManager(new LinearLayoutManager(AdminReviewsActivity.this));
+                rvProducts.setAdapter(adapter);
+                updateEmptyState();
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     private void setupSearch() {
@@ -196,29 +202,57 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     }
 
     private void loadData() {
-        allProducts = dataStore.getAllProducts();
-        adapter.updateData(allProducts);
-        updateEmptyState();
+        repository.getAllProducts(new DataRepository.DataCallback<java.util.List<Product>>() {
+            @Override
+            public void onSuccess(java.util.List<Product> products) {
+                allProducts = new ArrayList<>(products);
+                adapter.updateData(allProducts);
+                updateEmptyState();
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     private void updateStatistics() {
         // Total products
-        int totalProducts = dataStore.getAllProducts().size();
-        tvTotalProducts.setText(String.valueOf(totalProducts));
+        repository.getAllProducts(new DataRepository.DataCallback<java.util.List<Product>>() {
+            @Override
+            public void onSuccess(java.util.List<Product> products) {
+                tvTotalProducts.setText(String.valueOf(products.size()));
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
         
         // Total reviews
-        int totalReviews = dataStore.getAllReviews().size();
-        tvTotalReviews.setText(String.valueOf(totalReviews));
+        repository.getAllReviews(new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                tvTotalReviews.setText(String.valueOf(reviews.size()));
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
         
         // Average rating (only products with reviews)
-        float totalRating = 0;
-        int count = 0;
-        for (Product product : dataStore.getProductsWithReviews()) {
-            totalRating += product.getRating();
-            count++;
-        }
-        float avgRating = count > 0 ? totalRating / count : 0;
-        tvAverageRating.setText(String.format(Locale.getDefault(), "%.1f", avgRating));
+        repository.getAllProducts(new DataRepository.DataCallback<java.util.List<Product>>() {
+            @Override
+            public void onSuccess(java.util.List<Product> products) {
+                float totalRating = 0;
+                int count = 0;
+                for (Product product : products) {
+                    if (product.getRating() > 0) {
+                        totalRating += product.getRating();
+                        count++;
+                    }
+                }
+                float avgRating = count > 0 ? totalRating / count : 0;
+                tvAverageRating.setText(String.format(Locale.getDefault(), "%.1f", avgRating));
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     private void updateEmptyState() {

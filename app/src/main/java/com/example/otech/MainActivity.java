@@ -27,12 +27,13 @@ import com.example.otech.adapter.ProductAdapter;
 import com.example.otech.model.Banner;
 import com.example.otech.model.Category;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ProductAdapter.OnProductClickListener, CategoryAdapter.OnCategoryClickListener {
 
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     private BottomNavigationView bottomNavigation;
     private android.widget.LinearLayout layoutSearch;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private BannerAdapter bannerAdapter;
     private CategoryAdapter categoryAdapter;
     private ProductAdapter promotionProductsAdapter, bestSellerProductsAdapter, hotProductsAdapter;
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         // Get current user
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -95,8 +96,11 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     }
 
     private void setupBanner() {
-        // Load active banners from MockDataStore
-        ArrayList<Banner> activeBanners = dataStore.getActiveBanners();
+        // Load active banners from Room Database
+        repository.getActiveBanners(new DataRepository.DataCallback<List<Banner>>() {
+            @Override
+            public void onSuccess(List<Banner> banners) {
+                ArrayList<Banner> activeBanners = new ArrayList<>(banners);
         
         // If no banners, use default
         if (activeBanners.isEmpty()) {
@@ -104,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             activeBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
         }
         
-        bannerAdapter = new BannerAdapter(this, activeBanners);
+        bannerAdapter = new BannerAdapter(MainActivity.this, activeBanners);
         viewPagerBanner.setAdapter(bannerAdapter);
         
         // Auto-scroll every 5 seconds
@@ -121,6 +125,18 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             }
         };
         bannerHandler.postDelayed(bannerRunnable, 5000);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Use default banner on error
+                ArrayList<Banner> defaultBanners = new ArrayList<>();
+                defaultBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
+                
+                bannerAdapter = new BannerAdapter(MainActivity.this, defaultBanners);
+                viewPagerBanner.setAdapter(bannerAdapter);
+            }
+        });
     }
 
     private void setupCategories() {
@@ -142,77 +158,73 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     }
 
     private void setupPromotionProducts() {
-        // Get promotion products (products with discount > 15%)
-        ArrayList<Product> promotionProducts = new ArrayList<>();
-        allProducts = dataStore.getAllProducts();
-        
-        // Filter products with discount
-        for (Product product : allProducts) {
-            if (product.getDiscountPercent() > 15) {
-                promotionProducts.add(product);
+        // Load products from Room Database
+        repository.getPromotionProducts(10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                ArrayList<Product> promotionProducts = new ArrayList<>(products);
+                
+                // Display as horizontal scrolling list (1 row)
+                LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
+                rvPromotionProducts.setLayoutManager(layoutManager);
+                
+                promotionProductsAdapter = new ProductAdapter(MainActivity.this, promotionProducts, MainActivity.this);
+                rvPromotionProducts.setAdapter(promotionProductsAdapter);
             }
-        }
-        
-        // Sort by discount percentage and limit to 10
-        promotionProducts.sort((p1, p2) -> Float.compare((float) p2.getDiscountPercent(), (float) p1.getDiscountPercent()));
-        if (promotionProducts.size() > 10) {
-            promotionProducts = new ArrayList<>(promotionProducts.subList(0, 10));
-        }
-        
-        // Display as horizontal scrolling list (1 row)
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        rvPromotionProducts.setLayoutManager(layoutManager);
-        
-        promotionProductsAdapter = new ProductAdapter(this, promotionProducts, this);
-        rvPromotionProducts.setAdapter(promotionProductsAdapter);
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Lỗi load sản phẩm khuyến mãi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void setupBestSellerProducts() {
-        // Get best seller products (top sold products)
-        ArrayList<Product> bestSellerProducts = new ArrayList<>();
-        if (allProducts == null) {
-            allProducts = dataStore.getAllProducts();
-        }
-        
-        // Sort by sold count and limit to 10
-        ArrayList<Product> sortedBySold = new ArrayList<>(allProducts);
-        sortedBySold.sort((p1, p2) -> Integer.compare(p2.getSoldCount(), p1.getSoldCount()));
-        
-        int limit = Math.min(10, sortedBySold.size());
-        for (int i = 0; i < limit; i++) {
-            bestSellerProducts.add(sortedBySold.get(i));
-        }
-        
-        // Display as grid 2 columns
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        rvBestSellerProducts.setLayoutManager(layoutManager);
-        
-        bestSellerProductsAdapter = new ProductAdapter(this, bestSellerProducts, this);
-        rvBestSellerProducts.setAdapter(bestSellerProductsAdapter);
+        // Load best seller products from Room Database
+        repository.getBestSellers(10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                ArrayList<Product> bestSellerProducts = new ArrayList<>(products);
+                
+                // Display as grid 2 columns
+                GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                rvBestSellerProducts.setLayoutManager(layoutManager);
+                
+                bestSellerProductsAdapter = new ProductAdapter(MainActivity.this, bestSellerProducts, MainActivity.this);
+                rvBestSellerProducts.setAdapter(bestSellerProductsAdapter);
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Lỗi load sản phẩm bán chạy: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void setupHotProducts() {
-        // Get hot products (top rated products)
-        ArrayList<Product> hotProducts = new ArrayList<>();
-        if (allProducts == null) {
-            allProducts = dataStore.getAllProducts();
-        }
-        
-        // Sort by rating and limit to 10
-        ArrayList<Product> sortedByRating = new ArrayList<>(allProducts);
-        sortedByRating.sort((p1, p2) -> Float.compare(p2.getRating(), p1.getRating()));
-        
-        int limit = Math.min(10, sortedByRating.size());
-        for (int i = 0; i < limit; i++) {
-            hotProducts.add(sortedByRating.get(i));
-        }
-        
-        // Display as grid 2 columns
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        rvHotProducts.setLayoutManager(layoutManager);
-        
-        hotProductsAdapter = new ProductAdapter(this, hotProducts, this);
-        rvHotProducts.setAdapter(hotProductsAdapter);
+        // Load all products and sort by rating (temporarily - can optimize with DAO query later)
+        repository.getAllProducts(new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                ArrayList<Product> sortedByRating = new ArrayList<>(products);
+                sortedByRating.sort((p1, p2) -> Float.compare(p2.getRating(), p1.getRating()));
+                
+                int limit = Math.min(10, sortedByRating.size());
+                ArrayList<Product> hotProducts = new ArrayList<>(sortedByRating.subList(0, limit));
+                
+                // Display as grid 2 columns
+                GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                rvHotProducts.setLayoutManager(layoutManager);
+                
+                hotProductsAdapter = new ProductAdapter(MainActivity.this, hotProducts, MainActivity.this);
+                rvHotProducts.setAdapter(hotProductsAdapter);
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Lỗi load sản phẩm hot: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupListeners() {
@@ -307,16 +319,46 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             return;
         }
         
-        boolean isInWishlist = dataStore.isInWishlist(currentUserId, product.getId());
-        
-        if (isInWishlist) {
-            dataStore.removeFromWishlist(currentUserId, product.getId());
-            Toast.makeText(this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
-        } else {
-            dataStore.addToWishlist(currentUserId, product);
-            Toast.makeText(this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
-        }
-        
+        repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isInWishlist) {
+                if (isInWishlist) {
+                    repository.removeFromWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(MainActivity.this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
+                            refreshAdapters();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(MainActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    repository.addToWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(MainActivity.this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
+                            refreshAdapters();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(MainActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    
+    private void refreshAdapters() {
         // Refresh all adapters
         if (promotionProductsAdapter != null) {
             promotionProductsAdapter.notifyDataSetChanged();

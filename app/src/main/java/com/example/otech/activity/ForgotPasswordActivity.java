@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.otech.R;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -16,14 +16,14 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     private TextInputEditText etUsername, etNewPassword, etConfirmNewPassword;
     private MaterialButton btnResetPassword, btnBackToLogin;
-    private MockDataStore dataStore;
+    private DataRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         initViews();
         setupListeners();
@@ -72,22 +72,39 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Check if username exists
-        User user = dataStore.getUserByUsername(username);
-        
-        if (user == null) {
-            Toast.makeText(this, "Username không tồn tại", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Reset password
-        boolean success = dataStore.resetPassword(username, newPassword);
-        
-        if (success) {
-            Toast.makeText(this, "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            Toast.makeText(this, "Có lỗi xảy ra. Vui lòng thử lại.", Toast.LENGTH_SHORT).show();
-        }
+        // Check if username exists and reset password
+        btnResetPassword.setEnabled(false);
+        repository.getUserByUsername(username, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                if (user == null) {
+                    btnResetPassword.setEnabled(true);
+                    Toast.makeText(ForgotPasswordActivity.this, "Username không tồn tại", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                // Reset password
+                user.setPassword(newPassword);
+                repository.updateUser(user, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(ForgotPasswordActivity.this, "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                    
+                    @Override
+                    public void onError(Exception e) {
+                        btnResetPassword.setEnabled(true);
+                        Toast.makeText(ForgotPasswordActivity.this, "Có lỗi xảy ra: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                btnResetPassword.setEnabled(true);
+                Toast.makeText(ForgotPasswordActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

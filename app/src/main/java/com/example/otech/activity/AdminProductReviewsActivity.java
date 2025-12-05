@@ -14,7 +14,7 @@ import com.example.otech.R;
 import com.example.otech.adapter.ReviewAdminAdapter;
 import com.example.otech.model.Product;
 import com.example.otech.model.Review;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.ChipGroup;
 
@@ -33,7 +33,7 @@ public class AdminProductReviewsActivity extends AppCompatActivity implements Re
     private View layoutEmpty;
     
     private ReviewAdminAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private Product product;
     private ArrayList<Review> allReviews;
 
@@ -42,7 +42,7 @@ public class AdminProductReviewsActivity extends AppCompatActivity implements Re
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_product_reviews);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
         product = (Product) getIntent().getSerializableExtra("product");
         
         if (product == null) {
@@ -91,8 +91,15 @@ public class AdminProductReviewsActivity extends AppCompatActivity implements Re
         tvProductName.setText(product.getName());
         tvRating.setText(String.format(Locale.getDefault(), "%.1f", product.getRating()));
         
-        int reviewCount = dataStore.getReviewCountForProduct(product.getId());
-        tvReviewCount.setText(reviewCount + " đánh giá");
+        // Load review count asynchronously
+        repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                tvReviewCount.setText(reviews.size() + " đánh giá");
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
         
         // Load product image
         loadProductImage(product.getImageUrl());
@@ -131,12 +138,18 @@ public class AdminProductReviewsActivity extends AppCompatActivity implements Re
     }
 
     private void setupRecyclerView() {
-        allReviews = dataStore.getProductReviews(product.getId());
-        adapter = new ReviewAdminAdapter(this, allReviews, this);
-        rvReviews.setLayoutManager(new LinearLayoutManager(this));
-        rvReviews.setAdapter(adapter);
-        
-        updateEmptyState();
+        repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                allReviews = new ArrayList<>(reviews);
+                adapter = new ReviewAdminAdapter(AdminProductReviewsActivity.this, allReviews, AdminProductReviewsActivity.this);
+                rvReviews.setLayoutManager(new LinearLayoutManager(AdminProductReviewsActivity.this));
+                rvReviews.setAdapter(adapter);
+                updateEmptyState();
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     private void setupFilters() {
@@ -166,47 +179,54 @@ public class AdminProductReviewsActivity extends AppCompatActivity implements Re
     }
 
     private void updateRatingStatistics() {
-        allReviews = dataStore.getProductReviews(product.getId());
-        int totalReviews = allReviews.size();
-        
-        if (totalReviews == 0) {
-            return;
-        }
-        
-        // Count reviews by rating
-        int count5 = 0, count4 = 0, count3 = 0, count2 = 0, count1 = 0;
-        
-        for (Review review : allReviews) {
-            float rating = review.getRating();
-            if (rating >= 5.0f) count5++;
-            else if (rating >= 4.0f) count4++;
-            else if (rating >= 3.0f) count3++;
-            else if (rating >= 2.0f) count2++;
-            else count1++;
-        }
-        
-        // Update UI
-        tvCount5Star.setText(String.valueOf(count5));
-        tvCount4Star.setText(String.valueOf(count4));
-        tvCount3Star.setText(String.valueOf(count3));
-        tvCount2Star.setText(String.valueOf(count2));
-        tvCount1Star.setText(String.valueOf(count1));
-        
-        // Update progress bars
-        progressBar5Star.setMax(totalReviews);
-        progressBar5Star.setProgress(count5);
-        
-        progressBar4Star.setMax(totalReviews);
-        progressBar4Star.setProgress(count4);
-        
-        progressBar3Star.setMax(totalReviews);
-        progressBar3Star.setProgress(count3);
-        
-        progressBar2Star.setMax(totalReviews);
-        progressBar2Star.setProgress(count2);
-        
-        progressBar1Star.setMax(totalReviews);
-        progressBar1Star.setProgress(count1);
+        repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                allReviews = new ArrayList<>(reviews);
+                int totalReviews = allReviews.size();
+                
+                if (totalReviews == 0) {
+                    return;
+                }
+                
+                // Count reviews by rating
+                int count5 = 0, count4 = 0, count3 = 0, count2 = 0, count1 = 0;
+                
+                for (Review review : allReviews) {
+                    float rating = review.getRating();
+                    if (rating >= 5.0f) count5++;
+                    else if (rating >= 4.0f) count4++;
+                    else if (rating >= 3.0f) count3++;
+                    else if (rating >= 2.0f) count2++;
+                    else count1++;
+                }
+                
+                // Update UI
+                tvCount5Star.setText(String.valueOf(count5));
+                tvCount4Star.setText(String.valueOf(count4));
+                tvCount3Star.setText(String.valueOf(count3));
+                tvCount2Star.setText(String.valueOf(count2));
+                tvCount1Star.setText(String.valueOf(count1));
+                
+                // Update progress bars
+                progressBar5Star.setMax(totalReviews);
+                progressBar5Star.setProgress(count5);
+                
+                progressBar4Star.setMax(totalReviews);
+                progressBar4Star.setProgress(count4);
+                
+                progressBar3Star.setMax(totalReviews);
+                progressBar3Star.setProgress(count3);
+                
+                progressBar2Star.setMax(totalReviews);
+                progressBar2Star.setProgress(count2);
+                
+                progressBar1Star.setMax(totalReviews);
+                progressBar1Star.setProgress(count1);
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     private void updateEmptyState() {
@@ -222,14 +242,20 @@ public class AdminProductReviewsActivity extends AppCompatActivity implements Re
     @Override
     public void onReviewDeleted() {
         // Refresh data after deleting review
-        allReviews = dataStore.getProductReviews(product.getId());
-        adapter.updateData(allReviews);
-        updateRatingStatistics();
-        updateEmptyState();
-        
-        // Update product info
-        int reviewCount = dataStore.getReviewCountForProduct(product.getId());
-        tvReviewCount.setText(reviewCount + " đánh giá");
-        tvRating.setText(String.format(Locale.getDefault(), "%.1f", product.getRating()));
+        repository.getProductReviews(product.getId(), new DataRepository.DataCallback<java.util.List<Review>>() {
+            @Override
+            public void onSuccess(java.util.List<Review> reviews) {
+                allReviews = new ArrayList<>(reviews);
+                adapter.updateData(allReviews);
+                updateRatingStatistics();
+                updateEmptyState();
+                
+                // Update product info
+                tvReviewCount.setText(reviews.size() + " đánh giá");
+                tvRating.setText(String.format(Locale.getDefault(), "%.1f", product.getRating()));
+            }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 }

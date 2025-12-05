@@ -6,6 +6,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,10 +16,11 @@ import com.example.otech.R;
 import com.example.otech.adapter.UserAdapter;
 import com.example.otech.model.Order;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ManageUsersActivity extends AppCompatActivity implements UserAdapter.OnUserClickListener {
 
@@ -27,7 +29,7 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
     private LinearLayout layoutEmptyState;
     private TextView tvTotalUsers, tvActiveUsers, tvTotalOrders, tvTotalRevenue;
     private UserAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ArrayList<User> users;
 
     @Override
@@ -35,7 +37,7 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_users);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         initViews();
         setupToolbar();
@@ -65,50 +67,74 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
 
     private void loadUsers() {
         users = new ArrayList<>();
-        for (User user : dataStore.getAllUsers()) {
-            if (!user.isAdmin()) {
-                users.add(user);
+        repository.getAllUsers(new DataRepository.DataCallback<List<User>>() {
+            @Override
+            public void onSuccess(List<User> allUsers) {
+                users.clear();
+                for (User user : allUsers) {
+                    if (!user.isAdmin()) {
+                        users.add(user);
+                    }
+                }
+                if (users.isEmpty()) {
+                    rvUsers.setVisibility(View.GONE);
+                    layoutEmptyState.setVisibility(View.VISIBLE);
+                } else {
+                    rvUsers.setVisibility(View.VISIBLE);
+                    layoutEmptyState.setVisibility(View.GONE);
+                    adapter = new UserAdapter(users, ManageUsersActivity.this);
+                    rvUsers.setAdapter(adapter);
+                }
+                loadStatistics();
             }
-        }
-
-        if (users.isEmpty()) {
-            rvUsers.setVisibility(View.GONE);
-            layoutEmptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvUsers.setVisibility(View.VISIBLE);
-            layoutEmptyState.setVisibility(View.GONE);
-
-            adapter = new UserAdapter(users, this);
-            rvUsers.setAdapter(adapter);
-        }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(ManageUsersActivity.this, "Lỗi tải dữ liệu", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void loadStatistics() {
-        // Total users
         tvTotalUsers.setText(String.valueOf(users.size()));
-
-        // Active users (có ít nhất 1 đơn hàng)
-        int activeCount = 0;
-        int totalOrders = 0;
-        long totalRevenue = 0;
-
-        for (User user : users) {
-            ArrayList<Order> userOrders = dataStore.getUserOrders(user.getId());
-            if (!userOrders.isEmpty()) {
-                activeCount++;
-                totalOrders += userOrders.size();
-
-                for (Order order : userOrders) {
-                    if (order.getStatus().equals("delivered")) {
-                        totalRevenue += order.getTotalAmount();
+        int[] activeCount = {0};
+        int[] totalOrders = {0};
+        long[] totalRevenue = {0};
+        int[] completed = {0};
+        
+        repository.getAllOrders(new DataRepository.DataCallback<List<Order>>() {
+            @Override
+            public void onSuccess(List<Order> allOrders) {
+                for (Order order : allOrders) {
+                    for (User user : users) {
+                        if (order.getUserId().equals(user.getId())) {
+                            if (activeCount[0] == 0 || !userExistsInList(activeCount[0], user.getId())) {
+                                activeCount[0]++;
+                            }
+                            totalOrders[0]++;
+                            if ("delivered".equals(order.getStatus())) {
+                                totalRevenue[0] += (long) order.getTotalAmount();
+                            }
+                            break;
+                        }
                     }
                 }
+                tvActiveUsers.setText(String.valueOf(activeCount[0]));
+                tvTotalOrders.setText(String.valueOf(totalOrders[0]));
+                tvTotalRevenue.setText(formatCurrency(totalRevenue[0]));
             }
+            @Override
+            public void onError(Exception e) {
+                // Use default values
+            }
+        });
+    }
+    
+    private boolean userExistsInList(int count, String userId) {
+        if (count == 0) return false;
+        for (User user : users) {
+            if (user.getId().equals(userId)) return true;
         }
-
-        tvActiveUsers.setText(String.valueOf(activeCount));
-        tvTotalOrders.setText(String.valueOf(totalOrders));
-        tvTotalRevenue.setText(formatCurrency(totalRevenue));
+        return false;
     }
 
     private String formatCurrency(long amount) {

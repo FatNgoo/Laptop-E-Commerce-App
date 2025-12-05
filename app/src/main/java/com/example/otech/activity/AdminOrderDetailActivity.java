@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.OrderProductAdapter;
 import com.example.otech.model.Order;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.example.otech.util.FormatUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -36,14 +36,14 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     private LinearLayout layoutActionButtons;
 
     private Order order;
-    private MockDataStore dataStore;
+    private DataRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_order_detail);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         // Get order from intent
         order = (Order) getIntent().getSerializableExtra(Constants.EXTRA_ORDER);
@@ -94,10 +94,18 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         chipOrderStatus.setText(getStatusText(status));
         chipOrderStatus.setChipBackgroundColorResource(getStatusColor(status));
 
-        // Customer Info
-        // Get user info from dataStore
-        com.example.otech.model.User user = dataStore.getUserById(order.getUserId());
-        tvCustomerName.setText(user != null ? user.getFullName() : "N/A");
+        // Customer Info - Load asynchronously
+        repository.getUserById(order.getUserId(), new DataRepository.DataCallback<com.example.otech.model.User>() {
+            @Override
+            public void onSuccess(com.example.otech.model.User user) {
+                tvCustomerName.setText(user != null ? user.getFullName() : "N/A");
+            }
+            @Override
+            public void onError(Exception e) {
+                tvCustomerName.setText("N/A");
+            }
+        });
+        
         tvCustomerPhone.setText(order.getPhone());
         tvDeliveryAddress.setText(order.getDeliveryAddress());
 
@@ -219,69 +227,110 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     }
 
     private void cancelOrder(String reason) {
-        boolean success = dataStore.cancelOrder(order.getId(), reason);
-        if (success) {
-            // Create notification for user
-            dataStore.createNotification(
-                order.getUserId(),
-                "Đơn hàng đã bị hủy",
-                "Đơn hàng #" + order.getId() + " đã bị hủy bởi cửa hàng. Lý do: " + reason,
-                "ORDER_CANCELLED",
-                order.getId()
-            );
-            
-            Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-            // Refresh order data
-            order = dataStore.getOrderById(order.getId());
-            displayOrderInfo();
-        } else {
-            Toast.makeText(this, "Không thể hủy đơn hàng", Toast.LENGTH_SHORT).show();
-        }
+        repository.cancelOrder(order.getId(), reason, new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                // Create notification for user
+                repository.createNotification(
+                    order.getUserId(),
+                    "Đơn hàng đã bị hủy",
+                    "Đơn hàng #" + order.getId() + " đã bị hủy bởi cửa hàng. Lý do: " + reason,
+                    "ORDER_CANCELLED",
+                    order.getId(),
+                    new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(AdminOrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                            // Refresh order data
+                            repository.getOrderById(order.getId(), new DataRepository.DataCallback<Order>() {
+                                @Override
+                                public void onSuccess(Order updatedOrder) {
+                                    order = updatedOrder;
+                                    displayOrderInfo();
+                                }
+                                @Override
+                                public void onError(Exception e) {}
+                            });
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(AdminOrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                );
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AdminOrderDetailActivity.this, "Không thể hủy đơn hàng", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateOrderStatus(String newStatus, String message) {
-        boolean success = dataStore.updateOrderStatus(order.getId(), newStatus);
-        if (success) {
-            // Create notification based on status
-            String notificationTitle = "";
-            String notificationMessage = "";
-            String notificationType = "";
-            
-            switch (newStatus.toLowerCase()) {
-                case "processing":
-                    notificationTitle = "Đơn hàng đã được xác nhận";
-                    notificationMessage = "Đơn hàng #" + order.getId() + " đã được xác nhận và đang được xử lý";
-                    notificationType = "ORDER_CONFIRMED";
-                    break;
-                case "shipping":
-                    notificationTitle = "Đơn hàng đang giao";
-                    notificationMessage = "Đơn hàng #" + order.getId() + " đang trên đường giao đến bạn";
-                    notificationType = "ORDER_SHIPPING";
-                    break;
-                case "completed":
-                    notificationTitle = "Đơn hàng đã hoàn thành";
-                    notificationMessage = "Đơn hàng #" + order.getId() + " đã được giao thành công";
-                    notificationType = "ORDER_DELIVERED";
-                    break;
+        Order updatedOrder = order;
+        updatedOrder.setStatus(newStatus);
+        
+        repository.updateOrder(updatedOrder, new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                // Create notification based on status
+                String notificationTitle = "";
+                String notificationMessage = "";
+                String notificationType = "";
+                
+                switch (newStatus.toLowerCase()) {
+                    case "processing":
+                        notificationTitle = "Đơn hàng đã được xác nhận";
+                        notificationMessage = "Đơn hàng #" + order.getId() + " đã được xác nhận và đang được xử lý";
+                        notificationType = "ORDER_CONFIRMED";
+                        break;
+                    case "shipping":
+                        notificationTitle = "Đơn hàng đang giao";
+                        notificationMessage = "Đơn hàng #" + order.getId() + " đang trên đường giao đến bạn";
+                        notificationType = "ORDER_SHIPPING";
+                        break;
+                    case "completed":
+                        notificationTitle = "Đơn hàng đã hoàn thành";
+                        notificationMessage = "Đơn hàng #" + order.getId() + " đã được giao thành công";
+                        notificationType = "ORDER_DELIVERED";
+                        break;
+                }
+                
+                if (!notificationTitle.isEmpty()) {
+                    repository.createNotification(
+                        order.getUserId(),
+                        notificationTitle,
+                        notificationMessage,
+                        notificationType,
+                        order.getId(),
+                        new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(AdminOrderDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                                // Refresh order data
+                                repository.getOrderById(order.getId(), new DataRepository.DataCallback<Order>() {
+                                    @Override
+                                    public void onSuccess(Order updatedOrder) {
+                                        order = updatedOrder;
+                                        displayOrderInfo();
+                                    }
+                                    @Override
+                                    public void onError(Exception e) {}
+                                });
+                            }
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(AdminOrderDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    );
+                }
             }
-            
-            if (!notificationTitle.isEmpty()) {
-                dataStore.createNotification(
-                    order.getUserId(),
-                    notificationTitle,
-                    notificationMessage,
-                    notificationType,
-                    order.getId()
-                );
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AdminOrderDetailActivity.this, "Không thể cập nhật trạng thái", Toast.LENGTH_SHORT).show();
             }
-            
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-            // Refresh order data
-            order = dataStore.getOrderById(order.getId());
-            displayOrderInfo();
-        } else {
-            Toast.makeText(this, "Không thể cập nhật trạng thái", Toast.LENGTH_SHORT).show();
-        }
+        });
     }
 
     private String getStatusText(String status) {

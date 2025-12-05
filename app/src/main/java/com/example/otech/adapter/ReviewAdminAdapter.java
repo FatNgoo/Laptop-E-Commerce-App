@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.otech.R;
 import com.example.otech.model.Review;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.button.MaterialButton;
 
 import java.text.SimpleDateFormat;
@@ -28,7 +28,7 @@ public class ReviewAdminAdapter extends RecyclerView.Adapter<ReviewAdminAdapter.
     private Context context;
     private ArrayList<Review> reviews;
     private ArrayList<Review> reviewsFiltered;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private OnReviewDeletedListener listener;
 
     public interface OnReviewDeletedListener {
@@ -39,7 +39,7 @@ public class ReviewAdminAdapter extends RecyclerView.Adapter<ReviewAdminAdapter.
         this.context = context;
         this.reviews = reviews;
         this.reviewsFiltered = new ArrayList<>(reviews);
-        this.dataStore = MockDataStore.getInstance();
+        this.repository = DataRepository.getInstance(context.getApplicationContext());
         this.listener = listener;
     }
 
@@ -121,19 +121,24 @@ public class ReviewAdminAdapter extends RecyclerView.Adapter<ReviewAdminAdapter.
             .setTitle("Xóa đánh giá")
             .setMessage("Bạn có chắc muốn xóa đánh giá này?")
             .setPositiveButton("Xóa", (dialog, which) -> {
-                boolean success = dataStore.deleteReview(review.getId());
-                if (success) {
-                    reviews.remove(review);
-                    reviewsFiltered.remove(review);
-                    notifyDataSetChanged();
-                    Toast.makeText(context, "Đã xóa đánh giá", Toast.LENGTH_SHORT).show();
-                    
-                    if (listener != null) {
-                        listener.onReviewDeleted();
+                repository.deleteReview(review, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        reviews.remove(review);
+                        reviewsFiltered.remove(review);
+                        notifyDataSetChanged();
+                        Toast.makeText(context, "Đã xóa đánh giá", Toast.LENGTH_SHORT).show();
+                        
+                        if (listener != null) {
+                            listener.onReviewDeleted();
+                        }
                     }
-                } else {
-                    Toast.makeText(context, "Không thể xóa đánh giá", Toast.LENGTH_SHORT).show();
-                }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(context, "Không thể xóa đánh giá", Toast.LENGTH_SHORT).show();
+                    }
+                });
             })
             .setNegativeButton("Hủy", null)
             .show();

@@ -1,9 +1,20 @@
 package com.example.otech.model;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+import androidx.annotation.NonNull;
+
+import com.example.otech.database.Converters;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 
+@Entity(tableName = "products")
+@TypeConverters(Converters.class)
 public class Product implements Serializable {
+    @PrimaryKey
+    @NonNull
     private String id;
     private String name;
     private double price;
@@ -41,8 +52,9 @@ public class Product implements Serializable {
     }
 
     // Getters and Setters
+    @NonNull
     public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

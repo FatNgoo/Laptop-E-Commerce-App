@@ -17,7 +17,7 @@ import com.example.otech.R;
 import com.example.otech.adapter.CartAdapter;
 import com.example.otech.model.CartItem;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.example.otech.util.FormatUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -34,7 +34,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     private MaterialButton btnCheckout;
     private CheckBox cbSelectAll;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private CartAdapter cartAdapter;
     private String currentUserId;
     private ArrayList<CartItem> selectedItems;
@@ -44,7 +44,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cart);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         currentUserId = prefs.getString(Constants.KEY_USER_ID, "");
@@ -76,17 +76,28 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
     }
 
     private void loadCart() {
-        ArrayList<CartItem> cartItems = dataStore.getCart(currentUserId);
-        
-        if (cartItems.isEmpty()) {
-            layoutEmptyCart.setVisibility(View.VISIBLE);
-            layoutCartContent.setVisibility(View.GONE);
-        } else {
-            layoutEmptyCart.setVisibility(View.GONE);
-            layoutCartContent.setVisibility(View.VISIBLE);
-            cartAdapter.updateCart(cartItems);
-            updateTotal();
-        }
+        // Load cart from Room Database on background thread
+        repository.getCart(currentUserId, new DataRepository.DataCallback<java.util.List<CartItem>>() {
+            @Override
+            public void onSuccess(java.util.List<CartItem> cartItems) {
+                ArrayList<CartItem> items = new ArrayList<>(cartItems);
+                
+                if (items.isEmpty()) {
+                    layoutEmptyCart.setVisibility(View.VISIBLE);
+                    layoutCartContent.setVisibility(View.GONE);
+                } else {
+                    layoutEmptyCart.setVisibility(View.GONE);
+                    layoutCartContent.setVisibility(View.VISIBLE);
+                    cartAdapter.updateCart(items);
+                    updateTotal();
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(CartActivity.this, "Lỗi tải giỏ hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateTotal() {
@@ -152,17 +163,38 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.OnCar
 
     @Override
     public void onQuantityChanged(CartItem item, int newQuantity) {
-        dataStore.updateCartItemQuantity(currentUserId, item.getId(), newQuantity);
-        loadCart();
-        Toast.makeText(this, "Đã cập nhật số lượng", Toast.LENGTH_SHORT).show();
+        // Update quantity in Room Database
+        item.setQuantity(newQuantity);
+        repository.updateCartItem(item, new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                loadCart();
+                Toast.makeText(CartActivity.this, "Đã cập nhật số lượng", Toast.LENGTH_SHORT).show();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(CartActivity.this, "Lỗi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
     public void onItemDeleted(CartItem item) {
-        dataStore.removeFromCart(currentUserId, item.getId());
-        selectedItems.remove(item);
-        loadCart();
-        Toast.makeText(this, "Đã xóa khỏi giỏ hàng", Toast.LENGTH_SHORT).show();
+        // Delete from Room Database
+        repository.removeFromCart(item, new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                selectedItems.remove(item);
+                loadCart();
+                Toast.makeText(CartActivity.this, "Đã xóa khỏi giỏ hàng", Toast.LENGTH_SHORT).show();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(CartActivity.this, "Lỗi xóa: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     @Override
