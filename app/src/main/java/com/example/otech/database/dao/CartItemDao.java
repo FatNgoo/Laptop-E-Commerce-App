@@ -36,4 +36,7 @@ public interface CartItemDao {
     
     @Query("SELECT COUNT(*) FROM cart_items WHERE userId = :userId")
     int getCartCount(String userId);
+    
+    @Query("SELECT * FROM cart_items WHERE userId = :userId AND product_id = :productId LIMIT 1")
+    CartItem getCartItemByUserAndProduct(String userId, String productId);
 }

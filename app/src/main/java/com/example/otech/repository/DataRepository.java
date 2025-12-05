@@ -253,6 +253,17 @@ public class DataRepository {
         });
     }
     
+    public void getCartItemByUserAndProduct(String userId, String productId, DataCallback<CartItem> callback) {
+        executor.execute(() -> {
+            try {
+                CartItem cartItem = database.cartItemDao().getCartItemByUserAndProduct(userId, productId);
+                mainHandler.post(() -> callback.onSuccess(cartItem));
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+    
     public void addToCart(CartItem cartItem, VoidCallback callback) {
         executor.execute(() -> {
             try {
@@ -496,6 +507,15 @@ public class DataRepository {
         executor.execute(() -> {
             try {
                 database.reviewDao().insert(review);
+                
+                // Update product's average rating
+                float avgRating = database.reviewDao().getAverageRating(review.getProductId());
+                Product product = database.productDao().getById(review.getProductId());
+                if (product != null) {
+                    product.setRating(avgRating);
+                    database.productDao().update(product);
+                }
+                
                 mainHandler.post(callback::onSuccess);
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));

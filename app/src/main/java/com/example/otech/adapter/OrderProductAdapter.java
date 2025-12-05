@@ -45,12 +45,29 @@ public class OrderProductAdapter extends RecyclerView.Adapter<OrderProductAdapte
         // Load first image from imageUrls
         ArrayList<String> imageUrls = item.getProduct().getImageUrls();
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            String firstImageName = imageUrls.get(0);
-            int resId = context.getResources().getIdentifier(firstImageName, "drawable", context.getPackageName());
-            if (resId != 0) {
-                holder.ivProductImage.setImageResource(resId);
+            String firstImage = imageUrls.get(0);
+            
+            // Check if it's a drawable resource name (no scheme like content:// or file://)
+            if (!firstImage.contains("://")) {
+                // It's a drawable name (laptop1, banner2, etc.)
+                int resId = context.getResources().getIdentifier(
+                    firstImage.replace(".jpg", "").replace(".png", ""), 
+                    "drawable", 
+                    context.getPackageName()
+                );
+                if (resId != 0) {
+                    holder.ivProductImage.setImageResource(resId);
+                } else {
+                    holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
+                }
             } else {
-                holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
+                // It's a URI (content://, file://, etc.)
+                try {
+                    android.net.Uri imageUri = android.net.Uri.parse(firstImage);
+                    holder.ivProductImage.setImageURI(imageUri);
+                } catch (Exception e) {
+                    holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
+                }
             }
         } else {
             holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);

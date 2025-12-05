@@ -497,23 +497,50 @@ public class ProductDetailActivity extends AppCompatActivity {
                 return;
             }
 
-            // Directly add 1 item to cart (no bottom sheet)
-            com.example.otech.model.CartItem cartItem = new com.example.otech.model.CartItem(
-                java.util.UUID.randomUUID().toString(),
-                currentUserId,
-                product,
-                1
-            );
-            
-            repository.addToCart(cartItem, new DataRepository.VoidCallback() {
+            // Check if product already exists in cart
+            repository.getCartItemByUserAndProduct(currentUserId, product.getId(), new DataRepository.DataCallback<com.example.otech.model.CartItem>() {
                 @Override
-                public void onSuccess() {
-                    Toast.makeText(ProductDetailActivity.this, "Đã thêm 1 sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                public void onSuccess(com.example.otech.model.CartItem existingCartItem) {
+                    if (existingCartItem != null) {
+                        // Product already in cart, increase quantity
+                        existingCartItem.setQuantity(existingCartItem.getQuantity() + 1);
+                        repository.updateCartItem(existingCartItem, new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(ProductDetailActivity.this, "Đã thêm 1 sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        // Product not in cart, add new item
+                        com.example.otech.model.CartItem newCartItem = new com.example.otech.model.CartItem(
+                            java.util.UUID.randomUUID().toString(),
+                            currentUserId,
+                            product,
+                            1
+                        );
+                        
+                        repository.addToCart(newCartItem, new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(ProductDetailActivity.this, "Đã thêm 1 sản phẩm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -524,20 +551,49 @@ public class ProductDetailActivity extends AppCompatActivity {
                 return;
             }
             
-            // Add to cart first
-            com.example.otech.model.CartItem cartItem = new com.example.otech.model.CartItem(
-                java.util.UUID.randomUUID().toString(),
-                currentUserId,
-                product,
-                1
-            );
-            
-            repository.addToCart(cartItem, new DataRepository.VoidCallback() {
+            // Check if product already exists in cart
+            repository.getCartItemByUserAndProduct(currentUserId, product.getId(), new DataRepository.DataCallback<com.example.otech.model.CartItem>() {
                 @Override
-                public void onSuccess() {
-                    // Navigate to cart for checkout
-                    Intent intent = new Intent(ProductDetailActivity.this, CartActivity.class);
-                    startActivity(intent);
+                public void onSuccess(com.example.otech.model.CartItem existingCartItem) {
+                    if (existingCartItem != null) {
+                        // Product already in cart, increase quantity
+                        existingCartItem.setQuantity(existingCartItem.getQuantity() + 1);
+                        repository.updateCartItem(existingCartItem, new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                // Navigate to cart for checkout
+                                Intent intent = new Intent(ProductDetailActivity.this, CartActivity.class);
+                                startActivity(intent);
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        // Product not in cart, add new item
+                        com.example.otech.model.CartItem newCartItem = new com.example.otech.model.CartItem(
+                            java.util.UUID.randomUUID().toString(),
+                            currentUserId,
+                            product,
+                            1
+                        );
+                        
+                        repository.addToCart(newCartItem, new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                // Navigate to cart for checkout
+                                Intent intent = new Intent(ProductDetailActivity.this, CartActivity.class);
+                                startActivity(intent);
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(ProductDetailActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
 
                 @Override
@@ -692,12 +748,30 @@ public class ProductDetailActivity extends AppCompatActivity {
                     repository.insertReview(review, new DataRepository.VoidCallback() {
                         @Override
                         public void onSuccess() {
-                            Toast.makeText(ProductDetailActivity.this, "Đã gửi đánh giá thành công", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ProductDetailActivity.this, "Đã gữi đánh giá thành công", Toast.LENGTH_SHORT).show();
                             
-                            // Reload reviews and product info
-                            loadReviews();
-                            tvRating.setText(String.format("%.1f", product.getRating()));
-                            ProductDetailActivity.this.ratingBar.setRating(product.getRating());
+                            // Reload product from database to get updated rating
+                            repository.getProductById(product.getId(), new DataRepository.DataCallback<Product>() {
+                                @Override
+                                public void onSuccess(Product updatedProduct) {
+                                    if (updatedProduct != null) {
+                                        product = updatedProduct;
+                                        
+                                        // Update UI with new rating
+                                        tvRating.setText(String.format("%.1f", product.getRating()));
+                                        ProductDetailActivity.this.ratingBar.setRating(product.getRating());
+                                        
+                                        // Reload reviews section
+                                        loadReviews();
+                                    }
+                                }
+                                
+                                @Override
+                                public void onError(Exception e) {
+                                    // Still reload reviews even if product reload fails
+                                    loadReviews();
+                                }
+                            });
                             
                             dialog.dismiss();
                         }
