@@ -16,6 +16,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.otech.R;
 import com.example.otech.adapter.ProductImagePreviewAdapter;
+import com.example.otech.adapter.ProductThumbnailAdapter;
 import com.example.otech.adapter.RelatedProductAdapter;
 import com.example.otech.adapter.ReviewAdapter;
 import com.example.otech.model.Product;
@@ -52,9 +53,10 @@ public class ProductDetailActivity extends AppCompatActivity {
     private android.widget.ProgressBar pbRating5, pbRating4, pbRating3, pbRating2, pbRating1;
     private RatingBar ratingBar, rbAverageRating;
     private MaterialButton btnAddToCart, btnBuyNow, btnCompare, btnWriteReview, btnToggleDescription;
-    private RecyclerView rvReviews, rvRelatedProducts;
+    private RecyclerView rvReviews, rvRelatedProducts, rvThumbnails;
     private LinearLayout layoutAvailableButtons;
     private MaterialCardView cardOutOfStock;
+    private com.example.otech.adapter.ProductThumbnailAdapter thumbnailAdapter;
 
     private Product product;
     private DataRepository repository;
@@ -142,6 +144,9 @@ public class ProductDetailActivity extends AppCompatActivity {
         layoutAvailableButtons = findViewById(R.id.layoutAvailableButtons);
         cardOutOfStock = findViewById(R.id.cardOutOfStock);
         
+        // Thumbnails
+        rvThumbnails = findViewById(R.id.rvThumbnails);
+        
         setupReviewsSection();
         setupRelatedProducts();
         setupImageGallery();
@@ -162,6 +167,9 @@ public class ProductDetailActivity extends AppCompatActivity {
         ProductImagePreviewAdapter adapter = new ProductImagePreviewAdapter(this, imageUrls);
         vpProductImages.setAdapter(adapter);
         
+        // Setup thumbnails
+        setupThumbnails(imageUrls);
+        
         // Setup indicators
         setupIndicators(imageUrls.size());
         vpProductImages.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -169,11 +177,34 @@ public class ProductDetailActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 updateIndicators(position);
+                // Update thumbnail selection
+                if (thumbnailAdapter != null) {
+                    thumbnailAdapter.setSelectedPosition(position);
+                    // Scroll thumbnail to center
+                    rvThumbnails.smoothScrollToPosition(position);
+                }
             }
         });
         
         // Setup auto-scroll
         setupAutoScroll(imageUrls.size());
+    }
+    
+    private void setupThumbnails(ArrayList<String> imageUrls) {
+        if (imageUrls == null || imageUrls.size() <= 1) {
+            rvThumbnails.setVisibility(View.GONE);
+            return;
+        }
+        
+        rvThumbnails.setVisibility(View.VISIBLE);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        rvThumbnails.setLayoutManager(layoutManager);
+        
+        thumbnailAdapter = new ProductThumbnailAdapter(this, imageUrls, position -> {
+            // When thumbnail clicked, update ViewPager
+            vpProductImages.setCurrentItem(position, true);
+        });
+        rvThumbnails.setAdapter(thumbnailAdapter);
     }
     
     private void setupAutoScroll(final int imageCount) {

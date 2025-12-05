@@ -43,7 +43,7 @@
                 android:layout_height="300dp"
                 app:cardCornerRadius="0dp"
                 app:cardElevation="0dp"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="0dp">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
@@ -82,6 +82,19 @@
                 </RelativeLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Thumbnail Images RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvThumbnails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:clipToPadding="false"
+                tools:listitem="@layout/item_product_thumbnail" />
 
             <!-- Product Info Section -->
             <com.google.android.material.card.MaterialCardView
