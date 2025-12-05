@@ -90,6 +90,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         initViews();
         displayProductInfo();
         setupListeners();
+        trackProductView();
     }
 
     private void initViews() {
@@ -791,6 +792,24 @@ public class ProductDetailActivity extends AppCompatActivity {
         });
         
         dialog.show();
+    }
+    
+    private void trackProductView() {
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            return; // User not logged in
+        }
+        
+        repository.trackProductView(currentUserId, product.getId(), product.getCategory(), new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                // View tracked successfully
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                // Silent fail - tracking is not critical
+            }
+        });
     }
     
     @Override

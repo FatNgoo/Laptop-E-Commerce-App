@@ -40,15 +40,20 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     private MaterialToolbar toolbar;
     private ViewPager2 viewPagerBanner;
     private RecyclerView rvCategories, rvPromotionProducts, rvBestSellerProducts, rvHotProducts;
+    private RecyclerView rvRecentlyViewed, rvRecommended;
     private ImageView ivNotifications;
     private TextView tvViewAllPromotion, tvViewAllBestSeller, tvViewAllHot;
+    private TextView tvRecommendedCategory;
     private BottomNavigationView bottomNavigation;
     private android.widget.LinearLayout layoutSearch;
+    private android.widget.LinearLayout layoutRecentlyViewed, layoutRecommended;
+    private android.view.View layoutResumeBrowsing;
     
     private DataRepository repository;
     private BannerAdapter bannerAdapter;
     private CategoryAdapter categoryAdapter;
-    private ProductAdapter promotionProductsAdapter, bestSellerProductsAdapter, hotProductsAdapter;
+    private ProductAdapter promotionProductsAdapter, bestSellerProductsAdapter, hotProductsAdapter, recommendedProductsAdapter;
+    private com.example.otech.adapter.RecentlyViewedAdapter recentlyViewedAdapter;
     private ArrayList<Product> allProducts;
     private String currentUserId;
     
@@ -70,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         
         initViews();
         setupBanner();
+        setupPersonalization();
         setupCategories();
         setupPromotionProducts();
         setupBestSellerProducts();
@@ -84,11 +90,17 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         rvPromotionProducts = findViewById(R.id.rvPromotionProducts);
         rvBestSellerProducts = findViewById(R.id.rvBestSellerProducts);
         rvHotProducts = findViewById(R.id.rvHotProducts);
+        rvRecentlyViewed = findViewById(R.id.rvRecentlyViewed);
+        rvRecommended = findViewById(R.id.rvRecommended);
         layoutSearch = findViewById(R.id.layoutSearch);
         ivNotifications = findViewById(R.id.ivNotifications);
         tvViewAllPromotion = findViewById(R.id.tvViewAllPromotion);
         tvViewAllBestSeller = findViewById(R.id.tvViewAllBestSeller);
         tvViewAllHot = findViewById(R.id.tvViewAllHot);
+        tvRecommendedCategory = findViewById(R.id.tvRecommendedCategory);
+        layoutRecentlyViewed = findViewById(R.id.layoutRecentlyViewed);
+        layoutRecommended = findViewById(R.id.layoutRecommended);
+        layoutResumeBrowsing = findViewById(R.id.layoutResumeBrowsing);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         
         setSupportActionBar(toolbar);
@@ -152,6 +164,185 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
                 }
             }
         });
+    }
+
+    private void setupPersonalization() {
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            // User not logged in, hide personalization sections
+            layoutRecentlyViewed.setVisibility(android.view.View.GONE);
+            layoutRecommended.setVisibility(android.view.View.GONE);
+            layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+            return;
+        }
+        
+        setupResumeBrowsing();
+        setupRecentlyViewed();
+        setupRecommended();
+    }
+
+    private void setupResumeBrowsing() {
+        repository.getUserPreference(currentUserId, new DataRepository.DataCallback<com.example.otech.model.UserPreference>() {
+            @Override
+            public void onSuccess(com.example.otech.model.UserPreference preference) {
+                if (preference != null && preference.getLastViewedProductId() != null) {
+                    // Check if last viewed was within 24 hours
+                    long timeDiff = System.currentTimeMillis() - preference.getLastViewedTimestamp();
+                    if (timeDiff < 24 * 60 * 60 * 1000) {
+                        // Load last viewed product
+                        repository.getProductById(preference.getLastViewedProductId(), new DataRepository.DataCallback<Product>() {
+                            @Override
+                            public void onSuccess(Product product) {
+                                if (product != null) {
+                                    displayResumeBrowsingCard(product);
+                                }
+                            }
+                            
+                            @Override
+                            public void onError(Exception e) {
+                                layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+                            }
+                        });
+                    } else {
+                        layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+                    }
+                } else {
+                    layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+            }
+        });
+    }
+
+    private void displayResumeBrowsingCard(Product product) {
+        layoutResumeBrowsing.setVisibility(android.view.View.VISIBLE);
+        
+        ImageView ivResumeProduct = layoutResumeBrowsing.findViewById(R.id.ivResumeProduct);
+        TextView tvResumeProductName = layoutResumeBrowsing.findViewById(R.id.tvResumeProductName);
+        
+        tvResumeProductName.setText(product.getName());
+        
+        // Load product image
+        ArrayList<String> imageUrls = product.getImageUrls();
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            String firstImageUrl = imageUrls.get(0);
+            loadProductImage(ivResumeProduct, firstImageUrl);
+        }
+        
+        layoutResumeBrowsing.setOnClickListener(v -> onProductClick(product));
+    }
+
+    private void setupRecentlyViewed() {
+        repository.getRecentlyViewed(currentUserId, 10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                if (products != null && !products.isEmpty()) {
+                    ArrayList<Product> recentProducts = new ArrayList<>(products);
+                    
+                    // Sync favorite status
+                    syncFavoriteStatus(recentProducts, () -> {
+                        layoutRecentlyViewed.setVisibility(android.view.View.VISIBLE);
+                        
+                        LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
+                        rvRecentlyViewed.setLayoutManager(layoutManager);
+                        
+                        recentlyViewedAdapter = new com.example.otech.adapter.RecentlyViewedAdapter(
+                            MainActivity.this, recentProducts, MainActivity.this::onProductClick);
+                        rvRecentlyViewed.setAdapter(recentlyViewedAdapter);
+                    });
+                } else {
+                    layoutRecentlyViewed.setVisibility(android.view.View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                layoutRecentlyViewed.setVisibility(android.view.View.GONE);
+            }
+        });
+    }
+
+    private void setupRecommended() {
+        repository.getRecommendedProducts(currentUserId, 10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                if (products != null && !products.isEmpty()) {
+                    ArrayList<Product> recommendedProducts = new ArrayList<>(products);
+                    
+                    // Show static text for recommendation section
+                    tvRecommendedCategory.setText("Dựa trên sở thích của bạn");
+                    tvRecommendedCategory.setVisibility(android.view.View.VISIBLE);
+                    
+                    // Sync favorite status
+                    syncFavoriteStatus(recommendedProducts, () -> {
+                        layoutRecommended.setVisibility(android.view.View.VISIBLE);
+                        
+                        GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                        rvRecommended.setLayoutManager(layoutManager);
+                        
+                        recommendedProductsAdapter = new ProductAdapter(MainActivity.this, recommendedProducts, MainActivity.this);
+                        rvRecommended.setAdapter(recommendedProductsAdapter);
+                    });
+                } else {
+                    layoutRecommended.setVisibility(android.view.View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                layoutRecommended.setVisibility(android.view.View.GONE);
+            }
+        });
+    }
+
+    private void loadProductImage(ImageView imageView, String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            return;
+        }
+
+        // Check if it's a file:// URI
+        if (imageUrl.startsWith("file://")) {
+            try {
+                android.net.Uri uri = android.net.Uri.parse(imageUrl);
+                java.io.File file = new java.io.File(uri.getPath());
+                if (file.exists()) {
+                    imageView.setImageURI(uri);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    imageView.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
+        // Check if it's a content:// URI
+        else if (imageUrl.startsWith("content://")) {
+            try {
+                imageView.setImageURI(android.net.Uri.parse(imageUrl));
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
+        // Load from drawable
+        else {
+            try {
+                String imageNameWithoutExt = imageUrl.replace(".jpg", "").replace(".png", "");
+                int resId = getResources().getIdentifier(imageNameWithoutExt, "drawable", getPackageName());
+                if (resId != 0) {
+                    imageView.setImageResource(resId);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    imageView.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
     }
 
     private void setupCategories() {
@@ -442,6 +633,9 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         
         // Refresh banners (to show newly uploaded banners)
         setupBanner();
+        
+        // Refresh personalization sections
+        setupPersonalization();
         
         // Refresh products (to sync favorite status from ProductDetailActivity)
         setupPromotionProducts();

@@ -56,4 +56,21 @@ public class Converters {
     public static Long dateToTimestamp(Date date) {
         return date == null ? null : date.getTime();
     }
+
+    @TypeConverter
+    public static java.util.Map<String, Integer> fromStringIntMap(String value) {
+        if (value == null) {
+            return new java.util.HashMap<>();
+        }
+        Type mapType = new TypeToken<java.util.Map<String, Integer>>() {}.getType();
+        return gson.fromJson(value, mapType);
+    }
+
+    @TypeConverter
+    public static String fromMap(java.util.Map<String, Integer> map) {
+        if (map == null) {
+            return null;
+        }
+        return gson.toJson(map);
+    }
 }

@@ -14,6 +14,8 @@ import com.example.otech.database.dao.OrderDao;
 import com.example.otech.database.dao.ProductDao;
 import com.example.otech.database.dao.ReviewDao;
 import com.example.otech.database.dao.UserDao;
+import com.example.otech.database.dao.UserPreferenceDao;
+import com.example.otech.database.dao.ViewHistoryDao;
 import com.example.otech.database.dao.WishlistDao;
 import com.example.otech.model.Address;
 import com.example.otech.model.Banner;
@@ -23,6 +25,8 @@ import com.example.otech.model.Order;
 import com.example.otech.model.Product;
 import com.example.otech.model.Review;
 import com.example.otech.model.User;
+import com.example.otech.model.UserPreference;
+import com.example.otech.model.ViewHistory;
 import com.example.otech.model.Wishlist;
 
 import java.util.concurrent.ExecutorService;
@@ -37,8 +41,10 @@ import java.util.concurrent.Executors;
     Review.class,
     Notification.class,
     Wishlist.class,
-    Banner.class
-}, version = 3, exportSchema = false)
+    Banner.class,
+    ViewHistory.class,
+    UserPreference.class
+}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     
     // DAOs
@@ -51,6 +57,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract NotificationDao notificationDao();
     public abstract WishlistDao wishlistDao();
     public abstract BannerDao bannerDao();
+    public abstract ViewHistoryDao viewHistoryDao();
+    public abstract UserPreferenceDao userPreferenceDao();
     
     // Singleton instance
     private static volatile AppDatabase INSTANCE;

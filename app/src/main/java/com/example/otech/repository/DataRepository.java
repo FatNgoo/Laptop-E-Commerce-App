@@ -845,4 +845,145 @@ public class DataRepository {
             }
         });
     }
+    
+    // ==================== VIEW HISTORY & PERSONALIZATION ====================
+    
+    /**
+     * Track product view - Increment view count and update timestamp
+     */
+    public void trackProductView(String userId, String productId, String category, VoidCallback callback) {
+        executor.execute(() -> {
+            try {
+                // Update view history
+                ViewHistory existing = database.viewHistoryDao().getViewHistory(userId, productId);
+                if (existing != null) {
+                    existing.setViewCount(existing.getViewCount() + 1);
+                    existing.setTimestamp(System.currentTimeMillis());
+                    database.viewHistoryDao().update(existing);
+                } else {
+                    String id = java.util.UUID.randomUUID().toString();
+                    ViewHistory newHistory = new ViewHistory(id, userId, productId, System.currentTimeMillis(), 1);
+                    database.viewHistoryDao().insert(newHistory);
+                }
+                
+                // Update user preferences
+                UserPreference preference = database.userPreferenceDao().getUserPreference(userId);
+                if (preference == null) {
+                    preference = new UserPreference(userId);
+                }
+                preference.incrementCategoryView(category);
+                preference.setLastViewedProductId(productId);
+                preference.setLastViewedTimestamp(System.currentTimeMillis());
+                
+                if (database.userPreferenceDao().getUserPreference(userId) == null) {
+                    database.userPreferenceDao().insert(preference);
+                } else {
+                    database.userPreferenceDao().update(preference);
+                }
+                
+                mainHandler.post(callback::onSuccess);
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+    
+    /**
+     * Get recently viewed products
+     */
+    public void getRecentlyViewed(String userId, int limit, DataCallback<List<Product>> callback) {
+        executor.execute(() -> {
+            try {
+                List<ViewHistory> histories = database.viewHistoryDao().getRecentlyViewed(userId, limit);
+                List<Product> products = new ArrayList<>();
+                
+                for (ViewHistory history : histories) {
+                    Product product = database.productDao().getById(history.getProductId());
+                    if (product != null) {
+                        products.add(product);
+                    }
+                }
+                
+                mainHandler.post(() -> callback.onSuccess(products));
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+    
+    /**
+     * Get recommended products based on user preferences
+     */
+    public void getRecommendedProducts(String userId, int limit, DataCallback<List<Product>> callback) {
+        executor.execute(() -> {
+            try {
+                UserPreference preference = database.userPreferenceDao().getUserPreference(userId);
+                List<Product> recommended = new ArrayList<>();
+                
+                if (preference != null) {
+                    String mostViewedCategory = preference.getMostViewedCategory();
+                    
+                    if (mostViewedCategory != null) {
+                        // Get products from most viewed category
+                        List<Product> categoryProducts = database.productDao().getByCategory(mostViewedCategory);
+                        
+                        // Sort by rating and sold count
+                        categoryProducts.sort((p1, p2) -> {
+                            int ratingCompare = Float.compare(p2.getRating(), p1.getRating());
+                            if (ratingCompare != 0) return ratingCompare;
+                            return Integer.compare(p2.getSoldCount(), p1.getSoldCount());
+                        });
+                        
+                        // Add top products
+                        for (int i = 0; i < Math.min(limit, categoryProducts.size()); i++) {
+                            recommended.add(categoryProducts.get(i));
+                        }
+                    }
+                }
+                
+                // If not enough recommendations, fill with best sellers
+                if (recommended.size() < limit) {
+                    int remaining = limit - recommended.size();
+                    List<Product> bestSellers = database.productDao().getBestSellers(remaining);
+                    for (Product product : bestSellers) {
+                        if (!recommended.contains(product) && recommended.size() < limit) {
+                            recommended.add(product);
+                        }
+                    }
+                }
+                
+                mainHandler.post(() -> callback.onSuccess(recommended));
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+    
+    /**
+     * Get user preference (for resume browsing)
+     */
+    public void getUserPreference(String userId, DataCallback<UserPreference> callback) {
+        executor.execute(() -> {
+            try {
+                UserPreference preference = database.userPreferenceDao().getUserPreference(userId);
+                mainHandler.post(() -> callback.onSuccess(preference));
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+    
+    /**
+     * Clear user view history
+     */
+    public void clearViewHistory(String userId, VoidCallback callback) {
+        executor.execute(() -> {
+            try {
+                database.viewHistoryDao().deleteAllForUser(userId);
+                mainHandler.post(callback::onSuccess);
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
 }
