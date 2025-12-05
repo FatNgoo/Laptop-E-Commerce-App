@@ -29,7 +29,10 @@ public class CompareProductAdapter extends RecyclerView.Adapter<CompareProductAd
 
     public CompareProductAdapter(Context context, ArrayList<Product> products, OnProductSelectedListener listener) {
         this.context = context;
-        this.products = products;
+        this.products = new ArrayList<>();
+        if (products != null) {
+            this.products.addAll(products);
+        }
         this.listener = listener;
     }
 
@@ -75,7 +78,10 @@ public class CompareProductAdapter extends RecyclerView.Adapter<CompareProductAd
 
     public void updateProducts(ArrayList<Product> newProducts) {
         this.products.clear();
-        this.products.addAll(newProducts);
+        if (newProducts != null) {
+            this.products.addAll(newProducts);
+        }
+        android.util.Log.d("CompareProductAdapter", "updateProducts: updated to " + this.products.size() + " products");
         notifyDataSetChanged();
     }
 

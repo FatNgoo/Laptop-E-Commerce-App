@@ -68,6 +68,8 @@ public class CompareActivity extends AppCompatActivity {
     private TextInputEditText etSearch;
     private ChipGroup chipGroupFilter;
     private Chip chipAll, chipSameCategory, chipGaming, chipOffice, chipThin;
+    private Chip chipStudent, chipTouch, chipAI, chipWorkstation, chipMacbook;
+    private TextView tvProductCount;
     
     // All products list for filtering
     private ArrayList<Product> allProducts = new ArrayList<>();
@@ -108,11 +110,17 @@ public class CompareActivity extends AppCompatActivity {
         // Search and filter
         etSearch = findViewById(R.id.etSearch);
         chipGroupFilter = findViewById(R.id.chipGroupFilter);
+        tvProductCount = findViewById(R.id.tvProductCount);
         chipAll = findViewById(R.id.chipAll);
         chipSameCategory = findViewById(R.id.chipSameCategory);
         chipGaming = findViewById(R.id.chipGaming);
         chipOffice = findViewById(R.id.chipOffice);
         chipThin = findViewById(R.id.chipThin);
+        chipStudent = findViewById(R.id.chipStudent);
+        chipTouch = findViewById(R.id.chipTouch);
+        chipAI = findViewById(R.id.chipAI);
+        chipWorkstation = findViewById(R.id.chipWorkstation);
+        chipMacbook = findViewById(R.id.chipMacbook);
         
         // Product 1 views
         ivProduct1 = findViewById(R.id.ivProduct1);
@@ -151,7 +159,7 @@ public class CompareActivity extends AppCompatActivity {
         btnViewProduct2 = findViewById(R.id.btnViewProduct2);
         
         setupButtons();
-        setupSearchAndFilter();
+        // Don't setup search and filter here - will be called after data is loaded
     }
 
     private void setupToolbar() {
@@ -178,7 +186,9 @@ public class CompareActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filterProducts();
+                if (!allProducts.isEmpty()) {
+                    filterProducts();
+                }
             }
 
             @Override
@@ -187,13 +197,17 @@ public class CompareActivity extends AppCompatActivity {
 
         // Filter chips
         chipGroupFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            filterProducts();
+            if (!allProducts.isEmpty()) {
+                filterProducts();
+            }
         });
     }
 
     private void filterProducts() {
         String searchQuery = etSearch.getText().toString().toLowerCase().trim();
         filteredProducts.clear();
+        
+        android.util.Log.d("CompareActivity", "filterProducts: allProducts size = " + allProducts.size());
         
         for (Product p : allProducts) {
             // Skip current product
@@ -221,6 +235,32 @@ public class CompareActivity extends AppCompatActivity {
                 categoryMatch = p.getCategory().equalsIgnoreCase("mỏng nhẹ") ||
                                p.getCategory().equalsIgnoreCase("mong nhe") ||
                                p.getCategory().equalsIgnoreCase("thin");
+            } else if (chipStudent.isChecked()) {
+                // Match "Sinh viên" category
+                categoryMatch = p.getCategory().equalsIgnoreCase("sinh viên") ||
+                               p.getCategory().equalsIgnoreCase("sinh vien") ||
+                               p.getCategory().equalsIgnoreCase("student");
+            } else if (chipTouch.isChecked()) {
+                // Match "Cảm ứng" category
+                categoryMatch = p.getCategory().equalsIgnoreCase("cảm ứng") ||
+                               p.getCategory().equalsIgnoreCase("cam ung") ||
+                               p.getCategory().equalsIgnoreCase("touch");
+            } else if (chipAI.isChecked()) {
+                // Match "Laptop AI" category
+                categoryMatch = p.getCategory().equalsIgnoreCase("laptop ai") ||
+                               p.getCategory().equalsIgnoreCase("ai");
+            } else if (chipWorkstation.isChecked()) {
+                // Match "Đồ họa- Kỹ thuật" category
+                categoryMatch = p.getCategory().equalsIgnoreCase("đồ họa- kỹ thuật") ||
+                               p.getCategory().equalsIgnoreCase("do hoa- ky thuat") ||
+                               p.getCategory().equalsIgnoreCase("workstation");
+            } else if (chipMacbook.isChecked()) {
+                // Match "Macbook CTO" category
+                categoryMatch = p.getCategory().equalsIgnoreCase("macbook cto") ||
+                               p.getCategory().equalsIgnoreCase("macbook");
+            } else {
+                // Default: if no chip is checked (shouldn't happen with selectionRequired), show all
+                categoryMatch = true;
             }
             
             if (!categoryMatch) continue;
@@ -240,8 +280,18 @@ public class CompareActivity extends AppCompatActivity {
             filteredProducts.add(p);
         }
         
+        android.util.Log.d("CompareActivity", "filterProducts: filteredProducts size = " + filteredProducts.size());
+        
+        // Update product count display
+        if (tvProductCount != null) {
+            tvProductCount.setText("Tìm thấy " + filteredProducts.size() + " sản phẩm");
+        }
+        
         if (adapter != null) {
             adapter.updateProducts(filteredProducts);
+            android.util.Log.d("CompareActivity", "filterProducts: adapter updated");
+        } else {
+            android.util.Log.e("CompareActivity", "filterProducts: adapter is null!");
         }
     }
 
@@ -249,10 +299,17 @@ public class CompareActivity extends AppCompatActivity {
         repository.getAllProducts(new DataRepository.DataCallback<List<Product>>() {
             @Override
             public void onSuccess(List<Product> products) {
+                android.util.Log.d("CompareActivity", "loadProducts: received " + products.size() + " products");
                 allProducts.clear();
                 allProducts.addAll(products);
-                filterProducts();
-                setupRecyclerView();
+                
+                // Ensure card is visible
+                cardSelectProduct.setVisibility(View.VISIBLE);
+                layoutCompareView.setVisibility(View.GONE);
+                
+                setupRecyclerView(); // Setup adapter first (only once)
+                setupSearchAndFilter(); // Setup listeners after data is loaded
+                filterProducts(); // Then filter and update adapter
             }
 
             @Override
@@ -263,15 +320,34 @@ public class CompareActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        adapter = new CompareProductAdapter(this, filteredProducts, product -> {
-            product2 = product;
-            displayProduct2(product2);
-            cardSelectProduct.setVisibility(View.GONE);
-            layoutCompareView.setVisibility(View.VISIBLE);
-        });
-        
-        rvSelectProduct.setLayoutManager(new LinearLayoutManager(this));
-        rvSelectProduct.setAdapter(adapter);
+        // Only create adapter if it doesn't exist yet
+        if (adapter == null) {
+            adapter = new CompareProductAdapter(this, filteredProducts, product -> {
+                product2 = product;
+                displayProduct2(product2);
+                cardSelectProduct.setVisibility(View.GONE);
+                layoutCompareView.setVisibility(View.VISIBLE);
+            });
+            
+            // Custom LinearLayoutManager that wraps content properly in ScrollView
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this) {
+                @Override
+                public boolean canScrollVertically() {
+                    return false; // Disable RecyclerView scroll, let parent ScrollView handle it
+                }
+            };
+            
+            rvSelectProduct.setLayoutManager(layoutManager);
+            rvSelectProduct.setAdapter(adapter);
+            rvSelectProduct.setHasFixedSize(false);
+            
+            // Force RecyclerView to measure properly in nested ScrollView
+            rvSelectProduct.post(() -> {
+                if (adapter != null) {
+                    adapter.notifyDataSetChanged();
+                }
+            });
+        }
     }
 
     private void displayProduct1(Product product) {
