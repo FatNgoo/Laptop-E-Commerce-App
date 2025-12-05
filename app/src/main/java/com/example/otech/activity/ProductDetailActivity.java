@@ -51,7 +51,7 @@ public class ProductDetailActivity extends AppCompatActivity {
     private TextView tvRating5Count, tvRating4Count, tvRating3Count, tvRating2Count, tvRating1Count;
     private android.widget.ProgressBar pbRating5, pbRating4, pbRating3, pbRating2, pbRating1;
     private RatingBar ratingBar, rbAverageRating;
-    private MaterialButton btnAddToCart, btnBuyNow, btnWriteReview, btnToggleDescription;
+    private MaterialButton btnAddToCart, btnBuyNow, btnCompare, btnWriteReview, btnToggleDescription;
     private RecyclerView rvReviews, rvRelatedProducts;
     private LinearLayout layoutAvailableButtons;
     private MaterialCardView cardOutOfStock;
@@ -115,6 +115,7 @@ public class ProductDetailActivity extends AppCompatActivity {
         ratingBar = findViewById(R.id.ratingBar);
         btnAddToCart = findViewById(R.id.btnAddToCart);
         btnBuyNow = findViewById(R.id.btnBuyNow);
+        btnCompare = findViewById(R.id.btnCompare);
         btnToggleDescription = findViewById(R.id.btnToggleDescription);
         
         // Reviews section
@@ -606,6 +607,12 @@ public class ProductDetailActivity extends AppCompatActivity {
 
         btnToggleDescription.setOnClickListener(v -> {
             toggleDescription();
+        });
+
+        btnCompare.setOnClickListener(v -> {
+            Intent intent = new Intent(ProductDetailActivity.this, CompareActivity.class);
+            intent.putExtra("product", product);
+            startActivity(intent);
         });
     }
 

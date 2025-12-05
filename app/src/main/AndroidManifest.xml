@@ -72,6 +72,12 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
         
+        <!-- Compare Products Activity -->
+        <activity
+            android:name=".activity.CompareActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProductDetailActivity" />
+        
         <!-- Cart Activity -->
         <activity
             android:name=".activity.CartActivity"
