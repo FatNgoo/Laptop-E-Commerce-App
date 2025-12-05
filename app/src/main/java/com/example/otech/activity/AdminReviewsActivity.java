@@ -50,8 +50,6 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
         setupRecyclerView();
         setupSearch();
         setupFilters();
-        loadData();
-        updateStatistics();
     }
 
     private void initViews() {
@@ -80,6 +78,7 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
                 rvProducts.setLayoutManager(new LinearLayoutManager(AdminReviewsActivity.this));
                 rvProducts.setAdapter(adapter);
                 updateEmptyState();
+                updateStatistics();
             }
             @Override
             public void onError(Exception e) {}
@@ -163,6 +162,9 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     }
 
     private void applyFilters() {
+        if (adapter == null || allProducts == null) {
+            return;
+        }
         // Special case for "< 3 stars"
         if (currentMinRating == -1.0f) {
             filterLowRating();
@@ -175,6 +177,9 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     }
 
     private void filterLowRating() {
+        if (adapter == null || allProducts == null) {
+            return;
+        }
         // Reset to full dataset first
         adapter.updateData(allProducts);
         
@@ -206,8 +211,10 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
             @Override
             public void onSuccess(java.util.List<Product> products) {
                 allProducts = new ArrayList<>(products);
-                adapter.updateData(allProducts);
-                updateEmptyState();
+                if (adapter != null) {
+                    adapter.updateData(allProducts);
+                    updateEmptyState();
+                }
             }
             @Override
             public void onError(Exception e) {}
@@ -256,6 +263,9 @@ public class AdminReviewsActivity extends AppCompatActivity implements ProductRe
     }
 
     private void updateEmptyState() {
+        if (adapter == null) {
+            return;
+        }
         if (adapter.getItemCount() == 0) {
             layoutEmpty.setVisibility(View.VISIBLE);
             rvProducts.setVisibility(View.GONE);

@@ -126,6 +126,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                     return "Hoàn thành";
                 case Constants.ORDER_STATUS_CANCELLED:
                     return "Đã hủy";
+                case Constants.ORDER_STATUS_OUT_OF_STOCK:
+                    return "Hết hàng";
                 default:
                     return status;
             }
@@ -141,6 +143,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 case Constants.ORDER_STATUS_COMPLETED:
                     return R.color.colorPrimary;
                 case Constants.ORDER_STATUS_CANCELLED:
+                case Constants.ORDER_STATUS_OUT_OF_STOCK:
                     return R.color.colorError;
                 default:
                     return R.color.gray_dark;
@@ -158,6 +161,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 case Constants.ORDER_STATUS_COMPLETED:
                     return R.drawable.ic_check;
                 case Constants.ORDER_STATUS_CANCELLED:
+                    return R.drawable.ic_delete;
+                case Constants.ORDER_STATUS_OUT_OF_STOCK:
                     return R.drawable.ic_delete;
                 default:
                     return R.drawable.ic_list;

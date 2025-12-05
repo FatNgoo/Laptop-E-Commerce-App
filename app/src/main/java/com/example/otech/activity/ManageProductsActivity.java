@@ -139,6 +139,8 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
                     currentFilter = "all";
                 } else if (checkedId == R.id.chipLowStock) {
                     currentFilter = "lowstock";
+                } else if (checkedId == R.id.chipOutOfStock) {
+                    currentFilter = "outofstock";
                 }
             }
             filterProducts();
@@ -186,7 +188,8 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
                 product.getBrand().toLowerCase().contains(query.toLowerCase());
 
             boolean matchesFilter = currentFilter.equals("all") ||
-                (currentFilter.equals("lowstock") && product.getStock() < 10);
+                (currentFilter.equals("lowstock") && product.getStock() > 0 && product.getStock() < 10) ||
+                (currentFilter.equals("outofstock") && product.getStock() == 0);
 
             boolean matchesCategory = selectedCategory.equals("Tất cả") || product.getCategory().equals(selectedCategory);
             boolean matchesBrand = selectedBrand.equals("Tất cả") || product.getBrand().equals(selectedBrand);

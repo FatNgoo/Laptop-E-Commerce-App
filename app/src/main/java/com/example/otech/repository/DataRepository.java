@@ -811,6 +811,19 @@ public class DataRepository {
         });
     }
     
+    public void insertAllBanners(java.util.ArrayList<Banner> banners, VoidCallback callback) {
+        executor.execute(() -> {
+            try {
+                for (Banner banner : banners) {
+                    database.bannerDao().insert(banner);
+                }
+                mainHandler.post(callback::onSuccess);
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            }
+        });
+    }
+    
     public void updateBanner(Banner banner, VoidCallback callback) {
         executor.execute(() -> {
             try {

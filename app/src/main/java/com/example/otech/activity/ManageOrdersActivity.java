@@ -68,12 +68,16 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 int checkedId = checkedIds.get(0);
                 if (checkedId == R.id.chipPending) {
                     statusFilter = Constants.ORDER_STATUS_PENDING;
+                } else if (checkedId == R.id.chipProcessing) {
+                    statusFilter = Constants.ORDER_STATUS_PROCESSING;
                 } else if (checkedId == R.id.chipShipping) {
                     statusFilter = Constants.ORDER_STATUS_SHIPPING;
                 } else if (checkedId == R.id.chipCompleted) {
                     statusFilter = Constants.ORDER_STATUS_COMPLETED;
                 } else if (checkedId == R.id.chipCancelled) {
                     statusFilter = Constants.ORDER_STATUS_CANCELLED;
+                } else if (checkedId == R.id.chipOutOfStock) {
+                    statusFilter = Constants.ORDER_STATUS_OUT_OF_STOCK;
                 }
             }
             
@@ -126,7 +130,7 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 adapter = new OrderAdapter(filteredOrders, this);
                 rvOrders.setAdapter(adapter);
             } else {
-                adapter.notifyDataSetChanged();
+                adapter.updateOrders(filteredOrders);
             }
         }
     }
@@ -151,7 +155,8 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 "Đang xử lý",
                 "Đang giao",
                 "Hoàn thành",
-                "Hủy đơn"
+                "Hủy đơn",
+                "Hết hàng"
         };
 
         String[] statusValues = {
@@ -159,7 +164,8 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 Constants.ORDER_STATUS_PROCESSING,
                 Constants.ORDER_STATUS_SHIPPING,
                 Constants.ORDER_STATUS_COMPLETED,
-                Constants.ORDER_STATUS_CANCELLED
+                Constants.ORDER_STATUS_CANCELLED,
+                Constants.ORDER_STATUS_OUT_OF_STOCK
         };
 
         new AlertDialog.Builder(this)
@@ -221,6 +227,8 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 return "Hoàn thành";
             case Constants.ORDER_STATUS_CANCELLED:
                 return "Đã hủy";
+            case Constants.ORDER_STATUS_OUT_OF_STOCK:
+                return "Hết hàng";
             default:
                 return status;
         }

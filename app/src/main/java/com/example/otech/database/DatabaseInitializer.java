@@ -56,8 +56,20 @@ public class DatabaseInitializer {
                 seedProducts(repository, context, new DataRepository.VoidCallback() {
                     @Override
                     public void onSuccess() {
-                        // Cuối cùng seed reviews
-                        seedReviews(repository, callback);
+                        // Seed banners
+                        seedBanners(repository, context, new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                // Cuối cùng seed reviews
+                                seedReviews(repository, callback);
+                            }
+                            
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e(TAG, "Error seeding banners: " + e.getMessage());
+                                callback.onError(e);
+                            }
+                        });
                     }
                     
                     @Override
@@ -460,6 +472,51 @@ public class DatabaseInitializer {
         product.setImageUrls(imageUrls);
         
         return product;
+    }
+    
+    private static void seedBanners(DataRepository repository, Context context, DataRepository.VoidCallback callback) {
+        ArrayList<com.example.otech.model.Banner> banners = new ArrayList<>();
+        
+        // Copy banner images from drawable to internal storage
+        String[] bannerNames = {"banner1.jpg", "banner2.jpg", "banner3.jpg", "banner4.jpg", "banner5.jpg"};
+        
+        for (int i = 0; i < bannerNames.length; i++) {
+            String bannerName = bannerNames[i];
+            String imageUri = com.example.otech.util.ImageStorageHelper.copyDrawableToStorage(context, bannerName);
+            
+            if (imageUri != null) {
+                // Create banner with file:// URI
+                String bannerId = String.valueOf(i + 1);
+                String title = "Banner " + (i + 1);
+                String link = "";
+                boolean isActive = true;
+                int order = i + 1;
+                
+                banners.add(new com.example.otech.model.Banner(bannerId, imageUri, title, link, isActive, order));
+                Log.d(TAG, "Copied banner " + bannerName + " to internal storage: " + imageUri);
+            } else {
+                // Fallback to drawable name if copy failed
+                String bannerId = String.valueOf(i + 1);
+                String title = "Banner " + (i + 1);
+                banners.add(new com.example.otech.model.Banner(bannerId, bannerName, title, "", true, i + 1));
+                Log.w(TAG, "Failed to copy banner " + bannerName + ", using drawable name");
+            }
+        }
+        
+        // Insert all banners into database
+        repository.insertAllBanners(banners, new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Seeded " + banners.size() + " banners to internal storage");
+                callback.onSuccess();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error inserting banners: " + e.getMessage());
+                callback.onError(e);
+            }
+        });
     }
     
     private static void seedReviews(DataRepository repository, InitCallback callback) {

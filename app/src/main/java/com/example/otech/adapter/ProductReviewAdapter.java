@@ -51,8 +51,16 @@ public class ProductReviewAdapter extends RecyclerView.Adapter<ProductReviewAdap
         holder.tvProductName.setText(product.getName());
         holder.tvProductBrand.setText(product.getBrand());
         
-        // Load product image
-        loadProductImage(product.getImageUrl(), holder.ivProductImage);
+        // Load product image from imageUrls array
+        ArrayList<String> imageUrls = product.getImageUrls();
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            String firstImage = imageUrls.get(0);
+            loadProductImage(firstImage, holder.ivProductImage);
+        } else if (product.getImageUrl() != null) {
+            loadProductImage(product.getImageUrl(), holder.ivProductImage);
+        } else {
+            holder.ivProductImage.setImageResource(R.drawable.ic_category);
+        }
         
         // Rating
         holder.tvRating.setText(String.format(Locale.getDefault(), "%.1f", product.getRating()));
@@ -100,8 +108,10 @@ public class ProductReviewAdapter extends RecyclerView.Adapter<ProductReviewAdap
         } else {
             // Try to load from drawable resources
             try {
+                // Remove .jpg or .png extension
+                String imageNameWithoutExt = imageUrl.replace(".jpg", "").replace(".png", "");
                 int resId = context.getResources().getIdentifier(
-                    imageUrl, "drawable", context.getPackageName()
+                    imageNameWithoutExt, "drawable", context.getPackageName()
                 );
                 
                 if (resId != 0) {

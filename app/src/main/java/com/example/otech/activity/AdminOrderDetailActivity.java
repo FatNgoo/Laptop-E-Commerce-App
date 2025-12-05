@@ -267,10 +267,9 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     }
 
     private void updateOrderStatus(String newStatus, String message) {
-        Order updatedOrder = order;
-        updatedOrder.setStatus(newStatus);
+        order.setStatus(newStatus);
         
-        repository.updateOrder(updatedOrder, new DataRepository.VoidCallback() {
+        repository.updateOrder(order, new DataRepository.VoidCallback() {
             @Override
             public void onSuccess() {
                 // Create notification based on status

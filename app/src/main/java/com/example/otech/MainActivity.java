@@ -96,6 +96,11 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     }
 
     private void setupBanner() {
+        // Stop existing banner auto-scroll to avoid memory leaks
+        if (bannerHandler != null && bannerRunnable != null) {
+            bannerHandler.removeCallbacks(bannerRunnable);
+        }
+        
         // Load active banners from Room Database
         repository.getActiveBanners(new DataRepository.DataCallback<List<Banner>>() {
             @Override
@@ -108,11 +113,17 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             activeBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
         }
         
-        bannerAdapter = new BannerAdapter(MainActivity.this, activeBanners);
-        viewPagerBanner.setAdapter(bannerAdapter);
+        // Update existing adapter or create new one
+        if (bannerAdapter == null) {
+            bannerAdapter = new BannerAdapter(MainActivity.this, activeBanners);
+            viewPagerBanner.setAdapter(bannerAdapter);
+        } else {
+            bannerAdapter.updateBanners(activeBanners);
+        }
         
         // Auto-scroll every 5 seconds
         final int bannerCount = activeBanners.size();
+        currentBannerPosition = 0; // Reset position
         bannerHandler = new Handler(Looper.getMainLooper());
         bannerRunnable = new Runnable() {
             @Override
@@ -133,8 +144,12 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
                 ArrayList<Banner> defaultBanners = new ArrayList<>();
                 defaultBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
                 
-                bannerAdapter = new BannerAdapter(MainActivity.this, defaultBanners);
-                viewPagerBanner.setAdapter(bannerAdapter);
+                if (bannerAdapter == null) {
+                    bannerAdapter = new BannerAdapter(MainActivity.this, defaultBanners);
+                    viewPagerBanner.setAdapter(bannerAdapter);
+                } else {
+                    bannerAdapter.updateBanners(defaultBanners);
+                }
             }
         });
     }
@@ -164,12 +179,15 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             public void onSuccess(List<Product> products) {
                 ArrayList<Product> promotionProducts = new ArrayList<>(products);
                 
-                // Display as horizontal scrolling list (1 row)
-                LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
-                rvPromotionProducts.setLayoutManager(layoutManager);
-                
-                promotionProductsAdapter = new ProductAdapter(MainActivity.this, promotionProducts, MainActivity.this);
-                rvPromotionProducts.setAdapter(promotionProductsAdapter);
+                // Sync favorite status for each product
+                syncFavoriteStatus(promotionProducts, () -> {
+                    // Display as horizontal scrolling list (1 row)
+                    LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
+                    rvPromotionProducts.setLayoutManager(layoutManager);
+                    
+                    promotionProductsAdapter = new ProductAdapter(MainActivity.this, promotionProducts, MainActivity.this);
+                    rvPromotionProducts.setAdapter(promotionProductsAdapter);
+                });
             }
             
             @Override
@@ -186,12 +204,15 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             public void onSuccess(List<Product> products) {
                 ArrayList<Product> bestSellerProducts = new ArrayList<>(products);
                 
-                // Display as grid 2 columns
-                GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
-                rvBestSellerProducts.setLayoutManager(layoutManager);
-                
-                bestSellerProductsAdapter = new ProductAdapter(MainActivity.this, bestSellerProducts, MainActivity.this);
-                rvBestSellerProducts.setAdapter(bestSellerProductsAdapter);
+                // Sync favorite status for each product
+                syncFavoriteStatus(bestSellerProducts, () -> {
+                    // Display as grid 2 columns
+                    GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                    rvBestSellerProducts.setLayoutManager(layoutManager);
+                    
+                    bestSellerProductsAdapter = new ProductAdapter(MainActivity.this, bestSellerProducts, MainActivity.this);
+                    rvBestSellerProducts.setAdapter(bestSellerProductsAdapter);
+                });
             }
             
             @Override
@@ -212,12 +233,15 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
                 int limit = Math.min(10, sortedByRating.size());
                 ArrayList<Product> hotProducts = new ArrayList<>(sortedByRating.subList(0, limit));
                 
-                // Display as grid 2 columns
-                GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
-                rvHotProducts.setLayoutManager(layoutManager);
-                
-                hotProductsAdapter = new ProductAdapter(MainActivity.this, hotProducts, MainActivity.this);
-                rvHotProducts.setAdapter(hotProductsAdapter);
+                // Sync favorite status for each product
+                syncFavoriteStatus(hotProducts, () -> {
+                    // Display as grid 2 columns
+                    GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                    rvHotProducts.setLayoutManager(layoutManager);
+                    
+                    hotProductsAdapter = new ProductAdapter(MainActivity.this, hotProducts, MainActivity.this);
+                    rvHotProducts.setAdapter(hotProductsAdapter);
+                });
             }
             
             @Override
@@ -225,6 +249,45 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
                 Toast.makeText(MainActivity.this, "Lỗi load sản phẩm hot: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+    
+    // Helper method to sync favorite status from database
+    private void syncFavoriteStatus(ArrayList<Product> products, Runnable onComplete) {
+        if (currentUserId.isEmpty()) {
+            // User not logged in, skip sync
+            if (onComplete != null) {
+                onComplete.run();
+            }
+            return;
+        }
+        
+        // Counter to track async calls
+        final int[] remainingChecks = {products.size()};
+        
+        for (Product product : products) {
+            repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean isInWishlist) {
+                    product.setFavorite(isInWishlist);
+                    remainingChecks[0]--;
+                    
+                    // When all checks complete, call onComplete
+                    if (remainingChecks[0] == 0 && onComplete != null) {
+                        onComplete.run();
+                    }
+                }
+                
+                @Override
+                public void onError(Exception e) {
+                    remainingChecks[0]--;
+                    
+                    // When all checks complete (even with errors), call onComplete
+                    if (remainingChecks[0] == 0 && onComplete != null) {
+                        onComplete.run();
+                    }
+                }
+            });
+        }
     }
 
     private void setupListeners() {
@@ -376,6 +439,13 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         super.onResume();
         // Reset bottom nav selection
         bottomNavigation.setSelectedItemId(R.id.nav_home);
+        
+        // Refresh banners (to show newly uploaded banners)
+        setupBanner();
+        
+        // Refresh products (to sync favorite status from ProductDetailActivity)
+        setupPromotionProducts();
+        setupBestSellerProducts();
         
         // Restart banner auto-scroll
         if (bannerHandler != null && bannerRunnable != null) {
