@@ -81,6 +81,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         });
         
         holder.ivFavorite.setOnClickListener(v -> {
+            // Toggle favorite state immediately for instant UI feedback
+            product.setFavorite(!product.isFavorite());
+            if (product.isFavorite()) {
+                holder.ivFavorite.setImageResource(R.drawable.ic_favorite_filled);
+            } else {
+                holder.ivFavorite.setImageResource(R.drawable.ic_favorite_border);
+            }
+            
             if (listener != null) {
                 listener.onFavoriteClick(product, position);
             }

@@ -677,6 +677,8 @@ public class DataRepository {
                 for (String productId : productIds) {
                     Product product = database.productDao().getById(productId);
                     if (product != null) {
+                        // Set favorite flag to true for all products in wishlist
+                        product.setFavorite(true);
                         wishlist.add(product);
                     }
                 }

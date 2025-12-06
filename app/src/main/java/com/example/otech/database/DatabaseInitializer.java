@@ -453,6 +453,11 @@ public class DatabaseInitializer {
         Product product = new Product(id, name, price, oldPrice, description, 
                 "placeholder_" + id, brand, category, specs, rating, stock);
         
+        // Set soldCount ngẫu nhiên từ 50-500
+        java.util.Random random = new java.util.Random();
+        int soldCount = 50 + random.nextInt(451); // 50 đến 500
+        product.setSoldCount(soldCount);
+        
         // Copy specific images from drawable to internal storage and get file:// URIs
         ArrayList<String> imageUrls = new ArrayList<>();
         for (String imageName : imageNames) {
@@ -522,11 +527,62 @@ public class DatabaseInitializer {
     private static void seedReviews(DataRepository repository, InitCallback callback) {
         ArrayList<Review> reviews = new ArrayList<>();
         
-        // Sample reviews cho products
-        reviews.add(new Review("r1", "1", "2", "Test User", 4.5f, 
-                "Laptop rất tốt cho văn phòng, pin trâu!"));
-        reviews.add(new Review("r2", "8", "2", "Test User", 5.0f, 
-                "Chơi game siêu mượt, RTX 4060 quá đỉnh!"));
+        // Danh sách comment đa dạng cho reviews (10-15 comments cho mỗi sản phẩm)
+        String[][] reviewComments = {
+            // 5 sao
+            {"Laptop tuyệt vời, hiệu năng mượt mà, đáng đồng tiền bát gạo!", "Sản phẩm chất lượng cao, giao hàng nhanh, đóng gói cẩn thận!", 
+             "Máy đẹp, cấu hình khủng, giá hợp lý, recommend 100%!", "Dùng rất ổn định, không có lỗi gì, hài lòng lắm!", 
+             "Quá đỉnh luôn! Xứng đáng 5 sao, sẽ giới thiệu cho bạn bè!"},
+            // 4-4.5 sao
+            {"Laptop tốt nhưng hơi nóng khi dùng lâu, vẫn ok!", "Màn hình đẹp, pin trâu, nhưng hơi nặng một chút.", 
+             "Hiệu năng tốt cho giá tiền, chỉ tiếc là SSD hơi nhỏ.", "Chất lượng tốt, đáp ứng nhu cầu công việc, chỉ thiếu backlight bàn phím.",
+             "Sản phẩm ổn, giá hợp lý, nhưng touchpad hơi nhỏ."},
+            // 3-3.5 sao
+            {"Tạm ổn với giá tiền, nhưng fan hơi ồn.", "Laptop bình thường, dùng được nhưng không xuất sắc lắm.",
+             "Giá tốt nhưng chất lượng cũng chỉ tầm trung thôi.", "Máy tạm được, pin hơi yếu, cần cải thiện.",
+             "Dùng cơ bản ok, nhưng không phù hợp công việc nặng."}
+        };
+        
+        // Tên người dùng mẫu
+        String[] userNames = {"Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E",
+                             "Vũ Thị F", "Đặng Văn G", "Bùi Thị H", "Đỗ Văn I", "Ngô Thị K",
+                             "Dương Văn L", "Lý Thị M", "Mai Văn N", "Chu Thị O", "Tô Văn P"};
+        
+        int reviewId = 1;
+        java.util.Random random = new java.util.Random();
+        
+        // Tạo 10-15 reviews cho mỗi sản phẩm (56 products)
+        for (int productId = 1; productId <= 56; productId++) {
+            int numReviews = 10 + random.nextInt(6); // 10-15 reviews
+            
+            for (int i = 0; i < numReviews; i++) {
+                // Random rating 3.0-5.0
+                float rating = 3.0f + random.nextFloat() * 2.0f;
+                
+                // Chọn comment phù hợp với rating
+                String comment;
+                if (rating >= 4.5f) {
+                    comment = reviewComments[0][random.nextInt(reviewComments[0].length)];
+                } else if (rating >= 3.5f) {
+                    comment = reviewComments[1][random.nextInt(reviewComments[1].length)];
+                } else {
+                    comment = reviewComments[2][random.nextInt(reviewComments[2].length)];
+                }
+                
+                String userName = userNames[random.nextInt(userNames.length)];
+                
+                reviews.add(new Review(
+                    "r" + reviewId++,
+                    String.valueOf(productId),
+                    String.valueOf(random.nextInt(2) + 1), // userId 1 hoặc 2
+                    userName,
+                    rating,
+                    comment
+                ));
+            }
+        }
+        
+        Log.d(TAG, "Generated " + reviews.size() + " reviews for all products");
         
         // Use repository method to insert reviews
         repository.insertAllReviews(reviews, new DataRepository.VoidCallback() {

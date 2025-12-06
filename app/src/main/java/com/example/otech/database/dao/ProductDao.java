@@ -40,7 +40,7 @@ public interface ProductDao {
     @Query("SELECT * FROM products ORDER BY soldCount DESC LIMIT :limit")
     List<Product> getBestSellers(int limit);
 
-    @Query("SELECT * FROM products WHERE oldPrice > price ORDER BY RANDOM() LIMIT :limit")
+    @Query("SELECT * FROM products WHERE oldPrice > price ORDER BY ((oldPrice - price) / oldPrice * 100) DESC LIMIT :limit")
     List<Product> getPromotionProducts(int limit);
 
     @Query("SELECT * FROM products WHERE brand = :brand")

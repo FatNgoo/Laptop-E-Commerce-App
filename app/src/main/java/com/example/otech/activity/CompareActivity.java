@@ -55,9 +55,7 @@ public class CompareActivity extends AppCompatActivity {
     private TextView tvProduct2Screen, tvProduct2Graphics, tvProduct2Battery;
     private TextView tvProduct2Weight, tvProduct2Os;
     
-    private MaterialButton btnAddProduct1ToCart, btnBuyProduct1;
-    private MaterialButton btnAddProduct2ToCart, btnBuyProduct2;
-    private MaterialButton btnViewProduct1, btnViewProduct2;
+    // Action buttons removed for cleaner comparison UI
     
     private Product product1, product2;
     private DataRepository repository;
@@ -150,13 +148,7 @@ public class CompareActivity extends AppCompatActivity {
         tvProduct2Weight = findViewById(R.id.tvProduct2Weight);
         tvProduct2Os = findViewById(R.id.tvProduct2Os);
         
-        // Action buttons
-        btnAddProduct1ToCart = findViewById(R.id.btnAddProduct1ToCart);
-        btnBuyProduct1 = findViewById(R.id.btnBuyProduct1);
-        btnAddProduct2ToCart = findViewById(R.id.btnAddProduct2ToCart);
-        btnBuyProduct2 = findViewById(R.id.btnBuyProduct2);
-        btnViewProduct1 = findViewById(R.id.btnViewProduct1);
-        btnViewProduct2 = findViewById(R.id.btnViewProduct2);
+        // Action buttons removed for cleaner comparison UI
         
         setupButtons();
         // Don't setup search and filter here - will be called after data is loaded
@@ -168,14 +160,7 @@ public class CompareActivity extends AppCompatActivity {
 
     private void setupButtons() {
         btnSwapProducts.setOnClickListener(v -> swapProducts());
-        
-        btnAddProduct1ToCart.setOnClickListener(v -> addToCart(product1));
-        btnBuyProduct1.setOnClickListener(v -> buyNow(product1));
-        btnViewProduct1.setOnClickListener(v -> viewProductDetail(product1));
-        
-        btnAddProduct2ToCart.setOnClickListener(v -> addToCart(product2));
-        btnBuyProduct2.setOnClickListener(v -> buyNow(product2));
-        btnViewProduct2.setOnClickListener(v -> viewProductDetail(product2));
+        // Product action buttons removed for cleaner comparison UI
     }
 
     private void setupSearchAndFilter() {
@@ -542,88 +527,7 @@ public class CompareActivity extends AppCompatActivity {
         displayProduct2(product2);
     }
 
-    private void addToCart(Product product) {
-        if (currentUserId.isEmpty()) {
-            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        if (product.getStock() <= 0) {
-            Toast.makeText(this, "Sản phẩm đã hết hàng", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // Check if product already in cart
-        repository.getCartItemByUserAndProduct(String.valueOf(currentUserId), product.getId(), 
-            new DataRepository.DataCallback<com.example.otech.model.CartItem>() {
-            @Override
-            public void onSuccess(com.example.otech.model.CartItem existingItem) {
-                if (existingItem != null) {
-                    // Update quantity
-                    existingItem.setQuantity(existingItem.getQuantity() + 1);
-                    repository.updateCartItem(existingItem, new DataRepository.VoidCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Toast.makeText(CompareActivity.this, "Đã thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onError(Exception e) {
-                            Toast.makeText(CompareActivity.this, "Lỗi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } else {
-                    // Add new item
-                    com.example.otech.model.CartItem newItem = new com.example.otech.model.CartItem();
-                    newItem.setUserId(String.valueOf(currentUserId));
-                    newItem.setProduct(product);
-                    newItem.setQuantity(1);
-                    
-                    repository.addToCart(newItem, new DataRepository.VoidCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Toast.makeText(CompareActivity.this, "Đã thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-                        }
-
-                        @Override
-                        public void onError(Exception e) {
-                            Toast.makeText(CompareActivity.this, "Lỗi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(CompareActivity.this, "Lỗi kiểm tra giỏ hàng", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void buyNow(Product product) {
-        if (currentUserId.isEmpty()) {
-            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        if (product.getStock() <= 0) {
-            Toast.makeText(this, "Sản phẩm đã hết hàng", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        // Navigate to checkout
-        Intent intent = new Intent(this, CheckoutActivity.class);
-        intent.putExtra("productId", product.getId());
-        intent.putExtra("quantity", 1);
-        intent.putExtra("fromCompare", true);
-        startActivity(intent);
-    }
-
-    private void viewProductDetail(Product product) {
-        Intent intent = new Intent(this, ProductDetailActivity.class);
-        intent.putExtra("product", product);
-        startActivity(intent);
-    }
+    // Action button methods removed (buttons removed for cleaner UI)
 
     private void loadProductImage(ImageView imageView, String imageUrl) {
         if (imageView == null) return;
