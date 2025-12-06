@@ -14,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.otech.R;
 import com.example.otech.adapter.UserAdapter;
-import com.example.otech.model.Order;
 import com.example.otech.model.User;
 import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -27,10 +26,12 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
     private MaterialToolbar toolbar;
     private RecyclerView rvUsers;
     private LinearLayout layoutEmptyState;
-    private TextView tvTotalUsers, tvActiveUsers, tvTotalOrders, tvTotalRevenue;
+    private TextView tvTotalUsers;
+    private com.google.android.material.textfield.TextInputEditText etSearchUsers;
     private UserAdapter adapter;
     private DataRepository repository;
     private ArrayList<User> users;
+    private ArrayList<User> filteredUsers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +43,6 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
         initViews();
         setupToolbar();
         loadUsers();
-        loadStatistics();
     }
 
     private void initViews() {
@@ -50,11 +50,10 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
         rvUsers = findViewById(R.id.rvUsers);
         layoutEmptyState = findViewById(R.id.layoutEmptyState);
         tvTotalUsers = findViewById(R.id.tvTotalUsers);
-        tvActiveUsers = findViewById(R.id.tvActiveUsers);
-        tvTotalOrders = findViewById(R.id.tvTotalOrders);
-        tvTotalRevenue = findViewById(R.id.tvTotalRevenue);
+        etSearchUsers = findViewById(R.id.etSearchUsers);
 
         rvUsers.setLayoutManager(new LinearLayoutManager(this));
+        setupSearch();
     }
 
     private void setupToolbar() {
@@ -67,6 +66,7 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
 
     private void loadUsers() {
         users = new ArrayList<>();
+        filteredUsers = new ArrayList<>();
         repository.getAllUsers(new DataRepository.DataCallback<List<User>>() {
             @Override
             public void onSuccess(List<User> allUsers) {
@@ -76,16 +76,18 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
                         users.add(user);
                     }
                 }
-                if (users.isEmpty()) {
+                filteredUsers = new ArrayList<>(users);
+                tvTotalUsers.setText(String.valueOf(users.size()));
+                
+                if (filteredUsers.isEmpty()) {
                     rvUsers.setVisibility(View.GONE);
                     layoutEmptyState.setVisibility(View.VISIBLE);
                 } else {
                     rvUsers.setVisibility(View.VISIBLE);
                     layoutEmptyState.setVisibility(View.GONE);
-                    adapter = new UserAdapter(users, ManageUsersActivity.this);
+                    adapter = new UserAdapter(filteredUsers, ManageUsersActivity.this);
                     rvUsers.setAdapter(adapter);
                 }
-                loadStatistics();
             }
             @Override
             public void onError(Exception e) {
@@ -94,51 +96,46 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
         });
     }
 
-    private void loadStatistics() {
-        tvTotalUsers.setText(String.valueOf(users.size()));
-        int[] activeCount = {0};
-        int[] totalOrders = {0};
-        long[] totalRevenue = {0};
-        int[] completed = {0};
-        
-        repository.getAllOrders(new DataRepository.DataCallback<List<Order>>() {
+    private void setupSearch() {
+        etSearchUsers.addTextChangedListener(new android.text.TextWatcher() {
             @Override
-            public void onSuccess(List<Order> allOrders) {
-                for (Order order : allOrders) {
-                    for (User user : users) {
-                        if (order.getUserId().equals(user.getId())) {
-                            if (activeCount[0] == 0 || !userExistsInList(activeCount[0], user.getId())) {
-                                activeCount[0]++;
-                            }
-                            totalOrders[0]++;
-                            if ("delivered".equals(order.getStatus())) {
-                                totalRevenue[0] += (long) order.getTotalAmount();
-                            }
-                            break;
-                        }
-                    }
-                }
-                tvActiveUsers.setText(String.valueOf(activeCount[0]));
-                tvTotalOrders.setText(String.valueOf(totalOrders[0]));
-                tvTotalRevenue.setText(formatCurrency(totalRevenue[0]));
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
             @Override
-            public void onError(Exception e) {
-                // Use default values
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterUsers(s.toString());
             }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
         });
     }
-    
-    private boolean userExistsInList(int count, String userId) {
-        if (count == 0) return false;
-        for (User user : users) {
-            if (user.getId().equals(userId)) return true;
-        }
-        return false;
-    }
 
-    private String formatCurrency(long amount) {
-        return String.format("%,dđ", amount);
+    private void filterUsers(String query) {
+        filteredUsers.clear();
+        if (query.isEmpty()) {
+            filteredUsers.addAll(users);
+        } else {
+            String lowerQuery = query.toLowerCase().trim();
+            for (User user : users) {
+                if (user.getFullName().toLowerCase().contains(lowerQuery) ||
+                    user.getEmail().toLowerCase().contains(lowerQuery)) {
+                    filteredUsers.add(user);
+                }
+            }
+        }
+        
+        if (filteredUsers.isEmpty()) {
+            rvUsers.setVisibility(View.GONE);
+            layoutEmptyState.setVisibility(View.VISIBLE);
+        } else {
+            rvUsers.setVisibility(View.VISIBLE);
+            layoutEmptyState.setVisibility(View.GONE);
+        }
+        
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     @Override
