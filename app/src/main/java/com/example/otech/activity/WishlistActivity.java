@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.ProductAdapter;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.MainActivity;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -29,7 +29,7 @@ public class WishlistActivity extends AppCompatActivity implements ProductAdapte
     private LinearLayout layoutEmptyWishlist;
     private BottomNavigationView bottomNavigation;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ProductAdapter productAdapter;
     private String currentUserId;
 
@@ -38,7 +38,7 @@ public class WishlistActivity extends AppCompatActivity implements ProductAdapte
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_wishlist);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
         
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         currentUserId = prefs.getString(Constants.KEY_USER_ID, "");
@@ -94,16 +94,24 @@ public class WishlistActivity extends AppCompatActivity implements ProductAdapte
     }
 
     private void loadWishlist() {
-        ArrayList<Product> wishlist = dataStore.getWishlist(currentUserId);
-        
-        if (wishlist.isEmpty()) {
-            layoutEmptyWishlist.setVisibility(View.VISIBLE);
-            rvWishlist.setVisibility(View.GONE);
-        } else {
-            layoutEmptyWishlist.setVisibility(View.GONE);
-            rvWishlist.setVisibility(View.VISIBLE);
-            productAdapter.updateProducts(wishlist);
-        }
+        repository.getWishlist(currentUserId, new DataRepository.DataCallback<ArrayList<Product>>() {
+            @Override
+            public void onSuccess(ArrayList<Product> wishlist) {
+                if (wishlist.isEmpty()) {
+                    layoutEmptyWishlist.setVisibility(View.VISIBLE);
+                    rvWishlist.setVisibility(View.GONE);
+                } else {
+                    layoutEmptyWishlist.setVisibility(View.GONE);
+                    rvWishlist.setVisibility(View.VISIBLE);
+                    productAdapter.updateProducts(wishlist);
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(WishlistActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -115,9 +123,18 @@ public class WishlistActivity extends AppCompatActivity implements ProductAdapte
 
     @Override
     public void onFavoriteClick(Product product, int position) {
-        dataStore.removeFromWishlist(currentUserId, product.getId());
-        Toast.makeText(this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
-        loadWishlist();
+        repository.removeFromWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(WishlistActivity.this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
+                loadWishlist();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(WishlistActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

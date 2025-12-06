@@ -24,29 +24,36 @@ import com.example.otech.activity.WishlistActivity;
 import com.example.otech.adapter.BannerAdapter;
 import com.example.otech.adapter.CategoryAdapter;
 import com.example.otech.adapter.ProductAdapter;
+import com.example.otech.model.Banner;
 import com.example.otech.model.Category;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ProductAdapter.OnProductClickListener, CategoryAdapter.OnCategoryClickListener {
 
     private MaterialToolbar toolbar;
     private ViewPager2 viewPagerBanner;
     private RecyclerView rvCategories, rvPromotionProducts, rvBestSellerProducts, rvHotProducts;
+    private RecyclerView rvRecentlyViewed, rvRecommended;
     private ImageView ivNotifications;
     private TextView tvViewAllPromotion, tvViewAllBestSeller, tvViewAllHot;
+    private TextView tvRecommendedCategory;
     private BottomNavigationView bottomNavigation;
     private android.widget.LinearLayout layoutSearch;
+    private android.widget.LinearLayout layoutRecentlyViewed, layoutRecommended;
+    private android.view.View layoutResumeBrowsing;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private BannerAdapter bannerAdapter;
     private CategoryAdapter categoryAdapter;
-    private ProductAdapter promotionProductsAdapter, bestSellerProductsAdapter, hotProductsAdapter;
+    private ProductAdapter promotionProductsAdapter, bestSellerProductsAdapter, hotProductsAdapter, recommendedProductsAdapter;
+    private com.example.otech.adapter.RecentlyViewedAdapter recentlyViewedAdapter;
     private ArrayList<Product> allProducts;
     private String currentUserId;
     
@@ -60,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         // Get current user
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -68,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         
         initViews();
         setupBanner();
+        setupPersonalization();
         setupCategories();
         setupPromotionProducts();
         setupBestSellerProducts();
@@ -82,11 +90,17 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         rvPromotionProducts = findViewById(R.id.rvPromotionProducts);
         rvBestSellerProducts = findViewById(R.id.rvBestSellerProducts);
         rvHotProducts = findViewById(R.id.rvHotProducts);
+        rvRecentlyViewed = findViewById(R.id.rvRecentlyViewed);
+        rvRecommended = findViewById(R.id.rvRecommended);
         layoutSearch = findViewById(R.id.layoutSearch);
         ivNotifications = findViewById(R.id.ivNotifications);
         tvViewAllPromotion = findViewById(R.id.tvViewAllPromotion);
         tvViewAllBestSeller = findViewById(R.id.tvViewAllBestSeller);
         tvViewAllHot = findViewById(R.id.tvViewAllHot);
+        tvRecommendedCategory = findViewById(R.id.tvRecommendedCategory);
+        layoutRecentlyViewed = findViewById(R.id.layoutRecentlyViewed);
+        layoutRecommended = findViewById(R.id.layoutRecommended);
+        layoutResumeBrowsing = findViewById(R.id.layoutResumeBrowsing);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         
         setSupportActionBar(toolbar);
@@ -94,25 +108,39 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     }
 
     private void setupBanner() {
-        // Real banner images
-        int[] bannerImages = {
-            R.drawable.banner1,
-            R.drawable.banner2,
-            R.drawable.banner3,
-            R.drawable.banner4,
-            R.drawable.banner5,
-            R.drawable.banner6
-        };
+        // Stop existing banner auto-scroll to avoid memory leaks
+        if (bannerHandler != null && bannerRunnable != null) {
+            bannerHandler.removeCallbacks(bannerRunnable);
+        }
         
-        bannerAdapter = new BannerAdapter(this, bannerImages);
-        viewPagerBanner.setAdapter(bannerAdapter);
+        // Load active banners from Room Database
+        repository.getActiveBanners(new DataRepository.DataCallback<List<Banner>>() {
+            @Override
+            public void onSuccess(List<Banner> banners) {
+                ArrayList<Banner> activeBanners = new ArrayList<>(banners);
+        
+        // If no banners, use default
+        if (activeBanners.isEmpty()) {
+            activeBanners = new ArrayList<>();
+            activeBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
+        }
+        
+        // Update existing adapter or create new one
+        if (bannerAdapter == null) {
+            bannerAdapter = new BannerAdapter(MainActivity.this, activeBanners);
+            viewPagerBanner.setAdapter(bannerAdapter);
+        } else {
+            bannerAdapter.updateBanners(activeBanners);
+        }
         
         // Auto-scroll every 5 seconds
+        final int bannerCount = activeBanners.size();
+        currentBannerPosition = 0; // Reset position
         bannerHandler = new Handler(Looper.getMainLooper());
         bannerRunnable = new Runnable() {
             @Override
             public void run() {
-                if (currentBannerPosition == bannerImages.length) {
+                if (currentBannerPosition == bannerCount) {
                     currentBannerPosition = 0;
                 }
                 viewPagerBanner.setCurrentItem(currentBannerPosition++, true);
@@ -120,6 +148,201 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             }
         };
         bannerHandler.postDelayed(bannerRunnable, 5000);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Use default banner on error
+                ArrayList<Banner> defaultBanners = new ArrayList<>();
+                defaultBanners.add(new Banner("1", "banner1", "Default Banner", "", true, 1));
+                
+                if (bannerAdapter == null) {
+                    bannerAdapter = new BannerAdapter(MainActivity.this, defaultBanners);
+                    viewPagerBanner.setAdapter(bannerAdapter);
+                } else {
+                    bannerAdapter.updateBanners(defaultBanners);
+                }
+            }
+        });
+    }
+
+    private void setupPersonalization() {
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            // User not logged in, hide personalization sections
+            layoutRecentlyViewed.setVisibility(android.view.View.GONE);
+            layoutRecommended.setVisibility(android.view.View.GONE);
+            layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+            return;
+        }
+        
+        setupResumeBrowsing();
+        setupRecentlyViewed();
+        setupRecommended();
+    }
+
+    private void setupResumeBrowsing() {
+        repository.getUserPreference(currentUserId, new DataRepository.DataCallback<com.example.otech.model.UserPreference>() {
+            @Override
+            public void onSuccess(com.example.otech.model.UserPreference preference) {
+                if (preference != null && preference.getLastViewedProductId() != null) {
+                    // Check if last viewed was within 24 hours
+                    long timeDiff = System.currentTimeMillis() - preference.getLastViewedTimestamp();
+                    if (timeDiff < 24 * 60 * 60 * 1000) {
+                        // Load last viewed product
+                        repository.getProductById(preference.getLastViewedProductId(), new DataRepository.DataCallback<Product>() {
+                            @Override
+                            public void onSuccess(Product product) {
+                                if (product != null) {
+                                    displayResumeBrowsingCard(product);
+                                }
+                            }
+                            
+                            @Override
+                            public void onError(Exception e) {
+                                layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+                            }
+                        });
+                    } else {
+                        layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+                    }
+                } else {
+                    layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                layoutResumeBrowsing.setVisibility(android.view.View.GONE);
+            }
+        });
+    }
+
+    private void displayResumeBrowsingCard(Product product) {
+        layoutResumeBrowsing.setVisibility(android.view.View.VISIBLE);
+        
+        ImageView ivResumeProduct = layoutResumeBrowsing.findViewById(R.id.ivResumeProduct);
+        TextView tvResumeProductName = layoutResumeBrowsing.findViewById(R.id.tvResumeProductName);
+        
+        tvResumeProductName.setText(product.getName());
+        
+        // Load product image
+        ArrayList<String> imageUrls = product.getImageUrls();
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            String firstImageUrl = imageUrls.get(0);
+            loadProductImage(ivResumeProduct, firstImageUrl);
+        }
+        
+        layoutResumeBrowsing.setOnClickListener(v -> onProductClick(product));
+    }
+
+    private void setupRecentlyViewed() {
+        repository.getRecentlyViewed(currentUserId, 10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                if (products != null && !products.isEmpty()) {
+                    ArrayList<Product> recentProducts = new ArrayList<>(products);
+                    
+                    // Sync favorite status
+                    syncFavoriteStatus(recentProducts, () -> {
+                        layoutRecentlyViewed.setVisibility(android.view.View.VISIBLE);
+                        
+                        LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
+                        rvRecentlyViewed.setLayoutManager(layoutManager);
+                        
+                        recentlyViewedAdapter = new com.example.otech.adapter.RecentlyViewedAdapter(
+                            MainActivity.this, recentProducts, MainActivity.this::onProductClick);
+                        rvRecentlyViewed.setAdapter(recentlyViewedAdapter);
+                    });
+                } else {
+                    layoutRecentlyViewed.setVisibility(android.view.View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                layoutRecentlyViewed.setVisibility(android.view.View.GONE);
+            }
+        });
+    }
+
+    private void setupRecommended() {
+        repository.getRecommendedProducts(currentUserId, 10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                if (products != null && !products.isEmpty()) {
+                    ArrayList<Product> recommendedProducts = new ArrayList<>(products);
+                    
+                    // Show static text for recommendation section
+                    tvRecommendedCategory.setText("Dựa trên sở thích của bạn");
+                    tvRecommendedCategory.setVisibility(android.view.View.VISIBLE);
+                    
+                    // Sync favorite status
+                    syncFavoriteStatus(recommendedProducts, () -> {
+                        layoutRecommended.setVisibility(android.view.View.VISIBLE);
+                        
+                        GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                        rvRecommended.setLayoutManager(layoutManager);
+                        
+                        recommendedProductsAdapter = new ProductAdapter(MainActivity.this, recommendedProducts, MainActivity.this);
+                        rvRecommended.setAdapter(recommendedProductsAdapter);
+                    });
+                } else {
+                    layoutRecommended.setVisibility(android.view.View.GONE);
+                }
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                layoutRecommended.setVisibility(android.view.View.GONE);
+            }
+        });
+    }
+
+    private void loadProductImage(ImageView imageView, String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            return;
+        }
+
+        // Check if it's a file:// URI
+        if (imageUrl.startsWith("file://")) {
+            try {
+                android.net.Uri uri = android.net.Uri.parse(imageUrl);
+                java.io.File file = new java.io.File(uri.getPath());
+                if (file.exists()) {
+                    imageView.setImageURI(uri);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    imageView.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
+        // Check if it's a content:// URI
+        else if (imageUrl.startsWith("content://")) {
+            try {
+                imageView.setImageURI(android.net.Uri.parse(imageUrl));
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
+        // Load from drawable
+        else {
+            try {
+                String imageNameWithoutExt = imageUrl.replace(".jpg", "").replace(".png", "");
+                int resId = getResources().getIdentifier(imageNameWithoutExt, "drawable", getPackageName());
+                if (resId != 0) {
+                    imageView.setImageResource(resId);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    imageView.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
     }
 
     private void setupCategories() {
@@ -141,77 +364,121 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
     }
 
     private void setupPromotionProducts() {
-        // Get promotion products (products with discount > 15%)
-        ArrayList<Product> promotionProducts = new ArrayList<>();
-        allProducts = dataStore.getAllProducts();
-        
-        // Filter products with discount
-        for (Product product : allProducts) {
-            if (product.getDiscountPercent() > 15) {
-                promotionProducts.add(product);
+        // Load products from Room Database
+        repository.getPromotionProducts(10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                ArrayList<Product> promotionProducts = new ArrayList<>(products);
+                
+                // Sync favorite status for each product
+                syncFavoriteStatus(promotionProducts, () -> {
+                    // Display as horizontal scrolling list (1 row)
+                    LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false);
+                    rvPromotionProducts.setLayoutManager(layoutManager);
+                    
+                    promotionProductsAdapter = new ProductAdapter(MainActivity.this, promotionProducts, MainActivity.this);
+                    rvPromotionProducts.setAdapter(promotionProductsAdapter);
+                });
             }
-        }
-        
-        // Sort by discount percentage and limit to 10
-        promotionProducts.sort((p1, p2) -> Float.compare((float) p2.getDiscountPercent(), (float) p1.getDiscountPercent()));
-        if (promotionProducts.size() > 10) {
-            promotionProducts = new ArrayList<>(promotionProducts.subList(0, 10));
-        }
-        
-        // Display as grid 2 columns
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        rvPromotionProducts.setLayoutManager(layoutManager);
-        
-        promotionProductsAdapter = new ProductAdapter(this, promotionProducts, this);
-        rvPromotionProducts.setAdapter(promotionProductsAdapter);
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Lỗi load sản phẩm khuyến mãi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void setupBestSellerProducts() {
-        // Get best seller products (top sold products)
-        ArrayList<Product> bestSellerProducts = new ArrayList<>();
-        if (allProducts == null) {
-            allProducts = dataStore.getAllProducts();
-        }
-        
-        // Sort by sold count and limit to 10
-        ArrayList<Product> sortedBySold = new ArrayList<>(allProducts);
-        sortedBySold.sort((p1, p2) -> Integer.compare(p2.getSoldCount(), p1.getSoldCount()));
-        
-        int limit = Math.min(10, sortedBySold.size());
-        for (int i = 0; i < limit; i++) {
-            bestSellerProducts.add(sortedBySold.get(i));
-        }
-        
-        // Display as grid 2 columns
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        rvBestSellerProducts.setLayoutManager(layoutManager);
-        
-        bestSellerProductsAdapter = new ProductAdapter(this, bestSellerProducts, this);
-        rvBestSellerProducts.setAdapter(bestSellerProductsAdapter);
+        // Load best seller products from Room Database
+        repository.getBestSellers(10, new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                ArrayList<Product> bestSellerProducts = new ArrayList<>(products);
+                
+                // Sync favorite status for each product
+                syncFavoriteStatus(bestSellerProducts, () -> {
+                    // Display as grid 2 columns
+                    GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                    rvBestSellerProducts.setLayoutManager(layoutManager);
+                    
+                    bestSellerProductsAdapter = new ProductAdapter(MainActivity.this, bestSellerProducts, MainActivity.this);
+                    rvBestSellerProducts.setAdapter(bestSellerProductsAdapter);
+                });
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Lỗi load sản phẩm bán chạy: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void setupHotProducts() {
-        // Get hot products (top rated products)
-        ArrayList<Product> hotProducts = new ArrayList<>();
-        if (allProducts == null) {
-            allProducts = dataStore.getAllProducts();
+        // Load all products and sort by rating (temporarily - can optimize with DAO query later)
+        repository.getAllProducts(new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                ArrayList<Product> sortedByRating = new ArrayList<>(products);
+                sortedByRating.sort((p1, p2) -> Float.compare(p2.getRating(), p1.getRating()));
+                
+                int limit = Math.min(10, sortedByRating.size());
+                ArrayList<Product> hotProducts = new ArrayList<>(sortedByRating.subList(0, limit));
+                
+                // Sync favorite status for each product
+                syncFavoriteStatus(hotProducts, () -> {
+                    // Display as grid 2 columns
+                    GridLayoutManager layoutManager = new GridLayoutManager(MainActivity.this, 2);
+                    rvHotProducts.setLayoutManager(layoutManager);
+                    
+                    hotProductsAdapter = new ProductAdapter(MainActivity.this, hotProducts, MainActivity.this);
+                    rvHotProducts.setAdapter(hotProductsAdapter);
+                });
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Lỗi load sản phẩm hot: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    
+    // Helper method to sync favorite status from database
+    private void syncFavoriteStatus(ArrayList<Product> products, Runnable onComplete) {
+        if (currentUserId.isEmpty()) {
+            // User not logged in, skip sync
+            if (onComplete != null) {
+                onComplete.run();
+            }
+            return;
         }
         
-        // Sort by rating and limit to 10
-        ArrayList<Product> sortedByRating = new ArrayList<>(allProducts);
-        sortedByRating.sort((p1, p2) -> Float.compare(p2.getRating(), p1.getRating()));
+        // Counter to track async calls
+        final int[] remainingChecks = {products.size()};
         
-        int limit = Math.min(10, sortedByRating.size());
-        for (int i = 0; i < limit; i++) {
-            hotProducts.add(sortedByRating.get(i));
+        for (Product product : products) {
+            repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean isInWishlist) {
+                    product.setFavorite(isInWishlist);
+                    remainingChecks[0]--;
+                    
+                    // When all checks complete, call onComplete
+                    if (remainingChecks[0] == 0 && onComplete != null) {
+                        onComplete.run();
+                    }
+                }
+                
+                @Override
+                public void onError(Exception e) {
+                    remainingChecks[0]--;
+                    
+                    // When all checks complete (even with errors), call onComplete
+                    if (remainingChecks[0] == 0 && onComplete != null) {
+                        onComplete.run();
+                    }
+                }
+            });
         }
-        
-        // Display as grid 2 columns
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        rvHotProducts.setLayoutManager(layoutManager);
-        
-        hotProductsAdapter = new ProductAdapter(this, hotProducts, this);
-        rvHotProducts.setAdapter(hotProductsAdapter);
     }
 
     private void setupListeners() {
@@ -306,16 +573,46 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
             return;
         }
         
-        boolean isInWishlist = dataStore.isInWishlist(currentUserId, product.getId());
-        
-        if (isInWishlist) {
-            dataStore.removeFromWishlist(currentUserId, product.getId());
-            Toast.makeText(this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
-        } else {
-            dataStore.addToWishlist(currentUserId, product);
-            Toast.makeText(this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
-        }
-        
+        repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isInWishlist) {
+                if (isInWishlist) {
+                    repository.removeFromWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(MainActivity.this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
+                            refreshAdapters();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(MainActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    repository.addToWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(MainActivity.this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
+                            refreshAdapters();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(MainActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(MainActivity.this, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    
+    private void refreshAdapters() {
         // Refresh all adapters
         if (promotionProductsAdapter != null) {
             promotionProductsAdapter.notifyDataSetChanged();
@@ -333,6 +630,16 @@ public class MainActivity extends AppCompatActivity implements ProductAdapter.On
         super.onResume();
         // Reset bottom nav selection
         bottomNavigation.setSelectedItemId(R.id.nav_home);
+        
+        // Refresh banners (to show newly uploaded banners)
+        setupBanner();
+        
+        // Refresh personalization sections
+        setupPersonalization();
+        
+        // Refresh products (to sync favorite status from ProductDetailActivity)
+        setupPromotionProducts();
+        setupBestSellerProducts();
         
         // Restart banner auto-scroll
         if (bannerHandler != null && bannerRunnable != null) {

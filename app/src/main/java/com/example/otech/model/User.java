@@ -1,8 +1,15 @@
 package com.example.otech.model;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.annotation.NonNull;
+
 import java.io.Serializable;
 
+@Entity(tableName = "users")
 public class User implements Serializable {
+    @PrimaryKey
+    @NonNull
     private String id;
     private String username;
     private String password;
@@ -28,8 +35,9 @@ public class User implements Serializable {
     }
 
     // Getters and Setters
+    @NonNull
     public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

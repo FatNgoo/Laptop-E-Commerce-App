@@ -78,17 +78,71 @@ public class ImageStorageHelper {
     }
     
     /**
+     * Copy drawable resource to internal storage and return file:// URI
+     * This makes drawable images work like uploaded images
+     */
+    public static String copyDrawableToStorage(Context context, String drawableName) {
+        try {
+            // Create images directory if not exists
+            File imageDir = new File(context.getFilesDir(), IMAGE_DIR);
+            if (!imageDir.exists()) {
+                imageDir.mkdirs();
+            }
+            
+            // Remove file extension if present
+            String cleanName = drawableName.replace(".jpg", "").replace(".png", "");
+            
+            // Target file with .jpg extension
+            File targetFile = new File(imageDir, cleanName + ".jpg");
+            
+            // If file already exists, return its URI
+            if (targetFile.exists()) {
+                return android.net.Uri.fromFile(targetFile).toString();
+            }
+            
+            // Get drawable resource ID
+            int resId = context.getResources().getIdentifier(
+                cleanName, 
+                "drawable", 
+                context.getPackageName()
+            );
+            
+            if (resId != 0) {
+                InputStream in = context.getResources().openRawResource(resId);
+                OutputStream out = new FileOutputStream(targetFile);
+                
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = in.read(buffer)) > 0) {
+                    out.write(buffer, 0, length);
+                }
+                
+                out.flush();
+                out.close();
+                in.close();
+                
+                return android.net.Uri.fromFile(targetFile).toString();
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return null;
+    }
+    
+    /**
      * Initialize all product images from drawable to storage
      */
     public static void initializeImages(Context context) {
         // Laptop images
         for (int i = 1; i <= 5; i++) {
-            copyImageToStorage(context, "laptop" + i + ".jpg");
+            copyDrawableToStorage(context, "laptop" + i);
         }
         
         // Banner images  
         for (int i = 1; i <= 6; i++) {
-            copyImageToStorage(context, "banner" + i + ".jpg");
+            copyDrawableToStorage(context, "banner" + i);
         }
     }
 }

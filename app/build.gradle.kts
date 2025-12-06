@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("com.google.gms.google-services")
+    // Temporarily disabled - no Firebase in mock app
+    // id("com.google.gms.google-services")
 }
 
 android {
@@ -40,9 +41,21 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation("androidx.viewpager2:viewpager2:1.0.0")
+    
+    // OSMDroid for offline maps
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
-    implementation("com.google.firebase:firebase-analytics")
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    
+    // Gson for Room TypeConverter
+    implementation("com.google.code.gson:gson:2.10.1")
+    
+    // Firebase dependencies - disabled for mock app
+    // implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    // implementation("com.google.firebase:firebase-analytics")
 }

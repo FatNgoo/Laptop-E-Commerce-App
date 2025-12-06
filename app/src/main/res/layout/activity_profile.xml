@@ -150,7 +150,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_list"
+                        android:src="@drawable/ic_history"
                         android:tint="@color/colorPrimary"
                         android:contentDescription="Orders" />
 

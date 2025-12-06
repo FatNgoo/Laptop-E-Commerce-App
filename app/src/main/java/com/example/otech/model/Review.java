@@ -1,9 +1,20 @@
 package com.example.otech.model;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+import androidx.annotation.NonNull;
+
+import com.example.otech.database.Converters;
+
 import java.io.Serializable;
 import java.util.Date;
 
+@Entity(tableName = "reviews")
+@TypeConverters(Converters.class)
 public class Review implements Serializable {
+    @PrimaryKey
+    @NonNull
     private String id;
     private String productId;
     private String userId;
@@ -23,6 +34,7 @@ public class Review implements Serializable {
     }
 
     // Getters
+    @NonNull
     public String getId() { return id; }
     public String getProductId() { return productId; }
     public String getUserId() { return userId; }
@@ -32,7 +44,7 @@ public class Review implements Serializable {
     public Date getReviewDate() { return reviewDate; }
 
     // Setters
-    public void setId(String id) { this.id = id; }
+    public void setId(@NonNull String id) { this.id = id; }
     public void setProductId(String productId) { this.productId = productId; }
     public void setUserId(String userId) { this.userId = userId; }
     public void setUserName(String userName) { this.userName = userName; }

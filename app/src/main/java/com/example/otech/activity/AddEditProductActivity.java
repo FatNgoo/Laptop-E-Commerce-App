@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.ProductImageAdapter;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -38,7 +38,7 @@ public class AddEditProductActivity extends AppCompatActivity implements Product
 
     private ProductImageAdapter imageAdapter;
     private ArrayList<Uri> selectedImages;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private Product existingProduct;
     private boolean isEditMode = false;
 
@@ -49,7 +49,7 @@ public class AddEditProductActivity extends AppCompatActivity implements Product
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_edit_product);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
         selectedImages = new ArrayList<>();
 
         // Check if editing existing product
@@ -395,14 +395,18 @@ public class AddEditProductActivity extends AppCompatActivity implements Product
                     existingProduct.setImageUrl("https://via.placeholder.com/400");
                 }
 
-                success = dataStore.updateProduct(existingProduct);
-                if (success) {
-                    Toast.makeText(this, "Đã cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
-                    finish();
-                } else {
-                    Toast.makeText(this, "Lỗi cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
-                }
+                repository.updateProduct(existingProduct, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AddEditProductActivity.this, "Đã cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);
+                        finish();
+                    }
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(AddEditProductActivity.this, "Lỗi cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
                 // Add new product
                 Product newProduct = new Product(
@@ -423,14 +427,18 @@ public class AddEditProductActivity extends AppCompatActivity implements Product
                     newProduct.setImageUrls(imageUrls);
                 }
 
-                success = dataStore.addProduct(newProduct);
-                if (success) {
-                    Toast.makeText(this, "Đã thêm sản phẩm mới", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
-                    finish();
-                } else {
-                    Toast.makeText(this, "Lỗi thêm sản phẩm", Toast.LENGTH_SHORT).show();
-                }
+                repository.insertProduct(newProduct, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AddEditProductActivity.this, "Đã thêm sản phẩm mới", Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);
+                        finish();
+                    }
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(AddEditProductActivity.this, "Lỗi thêm sản phẩm", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Giá và số lượng phải là số hợp lệ", Toast.LENGTH_SHORT).show();

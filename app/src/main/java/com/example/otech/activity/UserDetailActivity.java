@@ -13,12 +13,13 @@ import com.example.otech.R;
 import com.example.otech.adapter.OrderAdapter;
 import com.example.otech.model.Order;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class UserDetailActivity extends AppCompatActivity {
@@ -31,14 +32,14 @@ public class UserDetailActivity extends AppCompatActivity {
     private TextView tvNoOrders;
     
     private User user;
-    private MockDataStore dataStore;
+    private DataRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_detail);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
         user = (User) getIntent().getSerializableExtra("user");
 
         initViews();
@@ -87,48 +88,46 @@ public class UserDetailActivity extends AppCompatActivity {
     private void loadUserOrders() {
         if (user == null) return;
 
-        ArrayList<Order> userOrders = dataStore.getOrdersByUserId(user.getId());
-        
-        tvTotalOrders.setText(String.valueOf(userOrders.size()));
-        
-        // Calculate total spent
-        double totalSpent = 0;
-        for (Order order : userOrders) {
-            if (!order.getStatus().equals("cancelled")) {
-                totalSpent += order.getTotalAmount();
+        repository.getUserOrders(user.getId(), new DataRepository.DataCallback<List<Order>>() {
+            @Override
+            public void onSuccess(List<Order> userOrders) {
+                tvTotalOrders.setText(String.valueOf(userOrders.size()));
+                
+                // Calculate total spent
+                double totalSpent = 0;
+                for (Order order : userOrders) {
+                    if (!"cancelled".equals(order.getStatus())) {
+                        totalSpent += order.getTotalAmount();
+                    }
+                }
+                
+                if (totalSpent >= 1000000) {
+                    tvTotalSpent.setText(String.format("%.1fM", totalSpent / 1000000));
+                } else {
+                    tvTotalSpent.setText(String.format("%,.0fđ", totalSpent));
+                }
+                
+                // Display orders
+                if (userOrders.isEmpty()) {
+                    tvNoOrders.setVisibility(View.VISIBLE);
+                    rvUserOrders.setVisibility(View.GONE);
+                } else {
+                    tvNoOrders.setVisibility(View.GONE);
+                    rvUserOrders.setVisibility(View.VISIBLE);
+                    
+                    ArrayList<Order> orders = new ArrayList<>(userOrders);
+                    OrderAdapter adapter = new OrderAdapter(orders, new OrderAdapter.OnOrderActionListener() {
+                        @Override
+                        public void onViewDetailsClick(Order order) {}
+                        @Override
+                        public void onCancelOrderClick(Order order) {}
+                    });
+                    rvUserOrders.setAdapter(adapter);
+                }
             }
-        }
-        
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-        String formattedAmount = formatter.format(totalSpent);
-        // Simplify display: convert to millions
-        if (totalSpent >= 1000000) {
-            tvTotalSpent.setText(String.format("%.1fM", totalSpent / 1000000));
-        } else {
-            tvTotalSpent.setText(formattedAmount);
-        }
-        
-        // Display orders
-        if (userOrders.isEmpty()) {
-            tvNoOrders.setVisibility(View.VISIBLE);
-            rvUserOrders.setVisibility(View.GONE);
-        } else {
-            tvNoOrders.setVisibility(View.GONE);
-            rvUserOrders.setVisibility(View.VISIBLE);
-            
-            OrderAdapter adapter = new OrderAdapter(userOrders, new OrderAdapter.OnOrderActionListener() {
-                @Override
-                public void onViewDetailsClick(Order order) {
-                    // Could open order detail if needed
-                }
-
-                @Override
-                public void onCancelOrderClick(Order order) {
-                    // Admin view - no cancel action
-                }
-            });
-            rvUserOrders.setAdapter(adapter);
-        }
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     @Override

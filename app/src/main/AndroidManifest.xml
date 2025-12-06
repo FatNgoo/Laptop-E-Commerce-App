@@ -2,6 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions for OSMDroid -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:ignore="ScopedStorage" />
+    
+    <!-- Permissions for image upload -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -59,6 +71,12 @@
             android:name=".activity.ProductDetailActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+        
+        <!-- Compare Products Activity -->
+        <activity
+            android:name=".activity.CompareActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.ProductDetailActivity" />
         
         <!-- Cart Activity -->
         <activity
@@ -125,9 +143,21 @@
             android:exported="false"
             android:parentActivityName=".activity.AdminActivity" />
         
-        <!-- Manage Reviews Activity -->
+        <!-- Admin Reviews Activity -->
         <activity
-            android:name=".activity.ManageReviewsActivity"
+            android:name=".activity.AdminReviewsActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminActivity" />
+        
+        <!-- Admin Product Reviews Activity -->
+        <activity
+            android:name=".activity.AdminProductReviewsActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.AdminReviewsActivity" />
+        
+        <!-- Admin Banners Activity -->
+        <activity
+            android:name=".activity.AdminBannersActivity"
             android:exported="false"
             android:parentActivityName=".activity.AdminActivity" />
         
@@ -184,6 +214,12 @@
             android:name=".activity.NotificationsActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+        
+        <!-- Map View Activity -->
+        <activity
+            android:name=".activity.MapViewActivity"
+            android:exported="false"
+            android:parentActivityName=".activity.OrderDetailActivity" />
             
     </application>
 

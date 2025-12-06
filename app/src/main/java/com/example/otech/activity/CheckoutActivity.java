@@ -21,7 +21,7 @@ import com.example.otech.model.Address;
 import com.example.otech.model.CartItem;
 import com.example.otech.model.Order;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.example.otech.util.FormatUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -44,7 +44,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private RadioGroup rgPaymentMethod;
     private MaterialButton btnPlaceOrder;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private String currentUserId;
     private ArrayList<CartItem> selectedItems;
     private int currentStep = 1;
@@ -57,7 +57,7 @@ public class CheckoutActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         currentUserId = prefs.getString(Constants.KEY_USER_ID, "");
@@ -125,24 +125,45 @@ public class CheckoutActivity extends AppCompatActivity {
     }
 
     private void loadUserInfo() {
-        User currentUser = dataStore.getUserById(currentUserId);
-        if (currentUser != null) {
-            etFullName.setText(currentUser.getFullName());
-            etPhone.setText(currentUser.getPhone());
-            etEmail.setText(currentUser.getEmail());
-            // Restore previously entered data if available
-            if (deliveryAddress != null && !deliveryAddress.isEmpty()) {
-                etAddress.setText(deliveryAddress);
-            } else {
-                // Load default address from address book or user profile
-                Address defaultAddress = dataStore.getDefaultAddress(currentUserId);
-                if (defaultAddress != null) {
-                    etAddress.setText(defaultAddress.getAddressDetail());
-                } else if (currentUser.getAddress() != null && !currentUser.getAddress().isEmpty()) {
-                    etAddress.setText(currentUser.getAddress());
+        repository.getUserById(currentUserId, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User currentUser) {
+                if (currentUser != null) {
+                    etFullName.setText(currentUser.getFullName());
+                    etPhone.setText(currentUser.getPhone());
+                    etEmail.setText(currentUser.getEmail());
+                    // Restore previously entered data if available
+                    if (deliveryAddress != null && !deliveryAddress.isEmpty()) {
+                        etAddress.setText(deliveryAddress);
+                    } else {
+                        // Load default address from address book or user profile
+                        repository.getDefaultAddress(currentUserId, new DataRepository.DataCallback<Address>() {
+                            @Override
+                            public void onSuccess(Address defaultAddress) {
+                                if (defaultAddress != null) {
+                                    etAddress.setText(defaultAddress.getAddressDetail());
+                                } else if (currentUser.getAddress() != null && !currentUser.getAddress().isEmpty()) {
+                                    etAddress.setText(currentUser.getAddress());
+                                }
+                            }
+                            
+                            @Override
+                            public void onError(Exception e) {
+                                // If no default address, check user profile
+                                if (currentUser.getAddress() != null && !currentUser.getAddress().isEmpty()) {
+                                    etAddress.setText(currentUser.getAddress());
+                                }
+                            }
+                        });
+                    }
                 }
             }
-        }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(CheckoutActivity.this, "Không tải được thông tin người dùng", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void setupStep1Listeners() {
@@ -258,38 +279,68 @@ public class CheckoutActivity extends AppCompatActivity {
             paymentMethod = "Ví điện tử";
         }
 
-        // Create order from selected items
-        Order order = dataStore.checkoutSelectedItems(currentUserId, selectedItems, deliveryAddress, customerPhone);
+        // Disable button to prevent double submission
+        btnPlaceOrder.setEnabled(false);
         
-        if (order != null) {
-            // Create notification for order placed
-            dataStore.createNotification(
-                currentUserId,
-                "Đơn hàng đã được đặt",
-                "Đơn hàng #" + order.getId() + " đã được đặt thành công",
-                "ORDER_PLACED",
-                order.getId()
-            );
-            
-            // Navigate to Order Confirmation screen
-            Intent intent = new Intent(CheckoutActivity.this, OrderConfirmationActivity.class);
-            intent.putExtra(Constants.EXTRA_ORDER, order);
-            intent.putExtra("customer_name", customerName);
-            intent.putExtra("payment_method", paymentMethod);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            finish();
-        } else {
-            // Order failed - likely due to insufficient stock
-            new android.app.AlertDialog.Builder(this)
-                .setTitle("Đặt hàng thất bại")
-                .setMessage("Một số sản phẩm trong đơn hàng đã hết hoặc không đủ số lượng. Vui lòng quay lại giỏ hàng và kiểm tra lại.")
-                .setPositiveButton("Quay lại giỏ hàng", (dialog, which) -> {
-                    finish();
-                })
-                .setCancelable(false)
-                .show();
-        }
+        // Create order using Room Database
+        String finalPaymentMethod = paymentMethod;
+        repository.checkoutSelectedItems(currentUserId, selectedItems, deliveryAddress, customerPhone, 
+            new DataRepository.DataCallback<Order>() {
+                @Override
+                public void onSuccess(Order order) {
+                    // Order created successfully
+                    // Create notification for order placed
+                    repository.createNotification(
+                        currentUserId,
+                        "Đơn hàng đã được đặt",
+                        "Đơn hàng #" + order.getId() + " đã được đặt thành công",
+                        "ORDER_PLACED",
+                        order.getId(),
+                        new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                // Navigate to Order Confirmation screen
+                                Intent intent = new Intent(CheckoutActivity.this, OrderConfirmationActivity.class);
+                                intent.putExtra(Constants.EXTRA_ORDER, order);
+                                intent.putExtra("customer_name", customerName);
+                                intent.putExtra("payment_method", finalPaymentMethod);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                                finish();
+                            }
+                            
+                            @Override
+                            public void onError(Exception e) {
+                                // Even if notification fails, still proceed to confirmation
+                                Intent intent = new Intent(CheckoutActivity.this, OrderConfirmationActivity.class);
+                                intent.putExtra(Constants.EXTRA_ORDER, order);
+                                intent.putExtra("customer_name", customerName);
+                                intent.putExtra("payment_method", finalPaymentMethod);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                                finish();
+                            }
+                        }
+                    );
+                }
+                
+                @Override
+                public void onError(Exception e) {
+                    // Re-enable button on error
+                    btnPlaceOrder.setEnabled(true);
+                    
+                    // Order failed - likely due to insufficient stock
+                    new android.app.AlertDialog.Builder(CheckoutActivity.this)
+                        .setTitle("Đặt hàng thất bại")
+                        .setMessage("Một số sản phẩm trong đơn hàng đã hết hoặc không đủ số lượng. Vui lòng quay lại giỏ hàng và kiểm tra lại.")
+                        .setPositiveButton("Quay lại giỏ hàng", (dialog, which) -> {
+                            finish();
+                        })
+                        .setCancelable(false)
+                        .show();
+                }
+            }
+        );
     }
     
     @Override

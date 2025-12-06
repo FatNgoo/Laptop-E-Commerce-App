@@ -23,6 +23,7 @@ public class Constants {
     public static final String ORDER_STATUS_SHIPPING = "shipping";
     public static final String ORDER_STATUS_COMPLETED = "completed";
     public static final String ORDER_STATUS_CANCELLED = "cancelled";
+    public static final String ORDER_STATUS_OUT_OF_STOCK = "out_of_stock";
     
     // User Roles
     public static final String ROLE_ADMIN = "admin";

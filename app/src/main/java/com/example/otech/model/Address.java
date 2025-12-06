@@ -1,8 +1,15 @@
 package com.example.otech.model;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.annotation.NonNull;
+
 import java.io.Serializable;
 
+@Entity(tableName = "addresses")
 public class Address implements Serializable {
+    @PrimaryKey
+    @NonNull
     private String id;
     private String userId;
     private String recipientName;
@@ -20,6 +27,7 @@ public class Address implements Serializable {
     }
 
     // Getters
+    @NonNull
     public String getId() { return id; }
     public String getUserId() { return userId; }
     public String getRecipientName() { return recipientName; }
@@ -28,7 +36,7 @@ public class Address implements Serializable {
     public boolean isDefault() { return isDefault; }
 
     // Setters
-    public void setId(String id) { this.id = id; }
+    public void setId(@NonNull String id) { this.id = id; }
     public void setUserId(String userId) { this.userId = userId; }
     public void setRecipientName(String recipientName) { this.recipientName = recipientName; }
     public void setPhone(String phone) { this.phone = phone; }

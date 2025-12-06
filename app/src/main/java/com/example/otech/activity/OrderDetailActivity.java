@@ -16,7 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.OrderProductAdapter;
 import com.example.otech.model.Order;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.model.User;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.example.otech.util.FormatUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -41,7 +42,7 @@ public class OrderDetailActivity extends AppCompatActivity {
     private ImageView ivStatusPending, ivStatusProcessing, ivStatusShipping, ivStatusCompleted;
 
     private Order order;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private String currentUserId;
 
     @Override
@@ -49,7 +50,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_detail);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
 
         // Get current user
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -62,7 +63,27 @@ public class OrderDetailActivity extends AppCompatActivity {
         if (order == null) {
             String orderId = getIntent().getStringExtra(Constants.EXTRA_ORDER_ID);
             if (orderId != null) {
-                order = dataStore.getOrderById(orderId);
+                repository.getOrderById(orderId, new DataRepository.DataCallback<Order>() {
+                    @Override
+                    public void onSuccess(Order loadedOrder) {
+                        order = loadedOrder;
+                        if (order != null) {
+                            initViews();
+                            displayOrderInfo();
+                            setupListeners();
+                        } else {
+                            Toast.makeText(OrderDetailActivity.this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                    }
+                    
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(OrderDetailActivity.this, "Lỗi tải đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                });
+                return;
             }
         }
 
@@ -143,10 +164,23 @@ public class OrderDetailActivity extends AppCompatActivity {
             cardCancelReason.setVisibility(View.GONE);
         }
 
-        // Check user role
-        com.example.otech.model.User user = dataStore.getUserById(currentUserId);
-        boolean isAdmin = user != null && "admin".equals(user.getRole());
-
+        // Check user role and setup UI based on role
+        repository.getUserById(currentUserId, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                boolean isAdmin = user != null && "admin".equals(user.getRole());
+                setupUIForRole(isAdmin, status);
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                // Default to non-admin if error
+                setupUIForRole(false, status);
+            }
+        });
+    }
+    
+    private void setupUIForRole(boolean isAdmin, String status) {
         if (isAdmin) {
             btnCancelOrder.setVisibility(View.GONE);
             layoutAdminActions.setVisibility(View.VISIBLE);
@@ -293,9 +327,18 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     private void updateOrderStatus(String newStatus, String message) {
         order.setStatus(newStatus);
-        dataStore.updateOrderStatus(order.getId(), newStatus);
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-        displayOrderInfo();
+        repository.updateOrder(order, new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(OrderDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                displayOrderInfo();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(OrderDetailActivity.this, "Lỗi cập nhật đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showCancelOrderDialog() {
@@ -324,27 +367,41 @@ public class OrderDetailActivity extends AppCompatActivity {
                     }
                     
                     // Update order status to cancelled with reason
-                    boolean success = dataStore.cancelOrder(order.getId(), reason);
-                    if (success) {
-                        order.setStatus("cancelled");
-                        order.setCancelReason(reason);
+                    repository.cancelOrder(order.getId(), reason, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            order.setStatus("cancelled");
+                            order.setCancelReason(reason);
+                            
+                            // Create notification for order cancelled
+                            repository.createNotification(
+                                order.getUserId(),
+                                "Đơn hàng đã bị hủy",
+                                "Đơn hàng #" + order.getId() + " đã được hủy. Lý do: " + reason,
+                                "ORDER_CANCELLED",
+                                order.getId(),
+                                new DataRepository.VoidCallback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                                        displayOrderInfo();
+                                    }
+                                    
+                                    @Override
+                                    public void onError(Exception e) {
+                                        // Still show success even if notification fails
+                                        Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                                        displayOrderInfo();
+                                    }
+                                }
+                            );
+                        }
                         
-                        // Create notification for order cancelled
-                        dataStore.createNotification(
-                            order.getUserId(),
-                            "Đơn hàng đã bị hủy",
-                            "Đơn hàng #" + order.getId() + " đã được hủy. Lý do: " + reason,
-                            "ORDER_CANCELLED",
-                            order.getId()
-                        );
-                        
-                        Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                        
-                        // Refresh display
-                        displayOrderInfo();
-                    } else {
-                        Toast.makeText(this, "Không thể hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                    }
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(OrderDetailActivity.this, "Không thể hủy đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Không", null)
                 .show();
@@ -354,15 +411,21 @@ public class OrderDetailActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Từ chối đơn hàng")
                 .setMessage("Bạn có chắc chắn muốn từ chối đơn hàng này?")
-                .setPositiveButton("Từ chối", (dialog, which) -> {
+                .setPositiveButton("哪v chối", (dialog, which) -> {
                     // Update order status to rejected
                     order.setStatus("rejected");
-                    dataStore.updateOrderStatus(order.getId(), "rejected");
-                    
-                    Toast.makeText(this, "Đã từ chối đơn hàng", Toast.LENGTH_SHORT).show();
-                    
-                    // Refresh display
-                    displayOrderInfo();
+                    repository.updateOrder(order, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(OrderDetailActivity.this, "Đã từ chối đơn hàng", Toast.LENGTH_SHORT).show();
+                            displayOrderInfo();
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(OrderDetailActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Không", null)
                 .show();
@@ -385,20 +448,15 @@ public class OrderDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create geo URI to open in Google Maps
-        // Format: geo:0,0?q=address
-        String uri = "geo:0,0?q=" + android.net.Uri.encode(address);
-        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(uri));
-        intent.setPackage("com.google.android.apps.maps"); // Force Google Maps
-
-        // Check if Google Maps is installed
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivity(intent);
-        } else {
-            // Fallback to web browser
-            String webUri = "https://www.google.com/maps/search/?api=1&query=" + android.net.Uri.encode(address);
-            intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
-            startActivity(intent);
-        }
+        // Open MapViewActivity to show address
+        android.content.Intent intent = new android.content.Intent(this, MapViewActivity.class);
+        intent.putExtra("address", address);
+        
+        // Mock coordinates for demonstration (in real app, use Geocoding API)
+        // For now, use center of Vietnam as default
+        intent.putExtra("latitude", 21.0285);
+        intent.putExtra("longitude", 105.8542);
+        
+        startActivity(intent);
     }
 }

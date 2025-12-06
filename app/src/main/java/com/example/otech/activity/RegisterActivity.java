@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.otech.R;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -19,14 +19,14 @@ public class RegisterActivity extends AppCompatActivity {
     private TextInputEditText etUsername, etFullName, etEmail, etPhone, etAddress, etPassword, etConfirmPassword;
     private MaterialButton btnRegister;
     private TextView tvBackToLogin;
-    private MockDataStore dataStore;
+    private DataRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         
         initViews();
         setupListeners();
@@ -105,13 +105,19 @@ public class RegisterActivity extends AppCompatActivity {
         // Create new user
         User newUser = new User(null, username, password, fullName, phone, address, email, "user");
         
-        boolean success = dataStore.register(newUser);
-        
-        if (success) {
-            Toast.makeText(this, "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            Toast.makeText(this, "Username đã tồn tại", Toast.LENGTH_SHORT).show();
-        }
+        btnRegister.setEnabled(false);
+        repository.register(newUser, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                Toast.makeText(RegisterActivity.this, "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                btnRegister.setEnabled(true);
+                Toast.makeText(RegisterActivity.this, "Username đã tồn tại", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

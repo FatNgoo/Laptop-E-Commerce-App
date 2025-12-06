@@ -16,8 +16,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.AddressAdapter;
 import com.example.otech.model.Address;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
+
+import java.util.List;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
@@ -32,7 +34,7 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
     private TextView tvEmptyAddresses;
     private MaterialButton btnAddAddress;
     
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private String currentUserId;
     private AddressAdapter adapter;
     private ArrayList<Address> addresses;
@@ -43,17 +45,20 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_address_book);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         currentUserId = prefs.getString(Constants.KEY_USER_ID, "");
         
         // Check if in select mode (called from checkout)
         isSelectMode = getIntent().getBooleanExtra("select_mode", false);
+        
+        // Initialize addresses list first to prevent null pointer
+        addresses = new ArrayList<>();
 
         initViews();
-        loadAddresses();
         setupRecyclerView();
         setupListeners();
+        loadAddresses();
         checkEmptyState();
     }
 
@@ -71,7 +76,21 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
     }
 
     private void loadAddresses() {
-        addresses = dataStore.getUserAddresses(currentUserId);
+        repository.getUserAddresses(currentUserId, new DataRepository.DataCallback<List<Address>>() {
+            @Override
+            public void onSuccess(List<Address> addressList) {
+                addresses = new ArrayList<>(addressList);
+                if (adapter != null) {
+                    adapter.updateAddresses(addresses);
+                }
+                checkEmptyState();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AddressBookActivity.this, "Lỗi tải địa chỉ: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupRecyclerView() {
@@ -151,8 +170,23 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
             
             if (existingAddress == null) {
                 // Add new
-                dataStore.addAddress(currentUserId, name, phone, city, district, ward, addressLine, isDefault);
-                Toast.makeText(this, "Đã thêm địa chỉ mới", Toast.LENGTH_SHORT).show();
+                String fullAddress = addressLine + ", " + ward + ", " + district + ", " + city;
+                String addressId = java.util.UUID.randomUUID().toString();
+                Address newAddress = new Address(addressId, currentUserId, name, phone, fullAddress, isDefault);
+                
+                repository.insertAddress(newAddress, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AddressBookActivity.this, "Đã thêm địa chỉ mới", Toast.LENGTH_SHORT).show();
+                        loadAddresses();
+                        dialog.dismiss();
+                    }
+                    
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(AddressBookActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
                 // Update existing
                 String fullAddress = addressLine + ", " + ward + ", " + district + ", " + city;
@@ -160,14 +194,21 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
                 existingAddress.setPhone(phone);
                 existingAddress.setAddressDetail(fullAddress);
                 existingAddress.setDefault(isDefault);
-                dataStore.updateAddress(existingAddress);
-                Toast.makeText(this, "Đã cập nhật địa chỉ", Toast.LENGTH_SHORT).show();
+                
+                repository.updateAddress(existingAddress, new DataRepository.VoidCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AddressBookActivity.this, "Đã cập nhật địa chỉ", Toast.LENGTH_SHORT).show();
+                        loadAddresses();
+                        dialog.dismiss();
+                    }
+                    
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(AddressBookActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
-            
-            loadAddresses();
-            adapter.updateAddresses(addresses);
-            checkEmptyState();
-            dialog.dismiss();
         });
         
         dialog.show();
@@ -175,10 +216,18 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
 
     @Override
     public void onSetDefault(Address address) {
-        dataStore.setDefaultAddress(currentUserId, address.getId());
-        loadAddresses();
-        adapter.updateAddresses(addresses);
-        Toast.makeText(this, "Đã đặt làm địa chỉ mặc định", Toast.LENGTH_SHORT).show();
+        repository.setDefaultAddress(currentUserId, address.getId(), new DataRepository.VoidCallback() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(AddressBookActivity.this, "Đã đặt làm địa chỉ mặc định", Toast.LENGTH_SHORT).show();
+                loadAddresses();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(AddressBookActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -191,12 +240,19 @@ public class AddressBookActivity extends AppCompatActivity implements AddressAda
         new AlertDialog.Builder(this)
                 .setTitle("Xoá địa chỉ")
                 .setMessage("Bạn có chắc muốn xoá địa chỉ này?")
-                .setPositiveButton("Xoá", (dialog, which) -> {
-                    dataStore.deleteAddress(currentUserId, address.getId());
-                    loadAddresses();
-                    adapter.updateAddresses(addresses);
-                    checkEmptyState();
-                    Toast.makeText(this, "Đã xoá địa chỉ", Toast.LENGTH_SHORT).show();
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    repository.deleteAddress(address, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(AddressBookActivity.this, "Đã xóa địa chỉ", Toast.LENGTH_SHORT).show();
+                            loadAddresses();
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(AddressBookActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Huỷ", null)
                 .show();

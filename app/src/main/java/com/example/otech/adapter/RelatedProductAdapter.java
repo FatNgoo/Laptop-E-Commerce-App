@@ -62,14 +62,8 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
         // Load first image from imageUrls
         ArrayList<String> imageUrls = product.getImageUrls();
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            String firstImageName = imageUrls.get(0);
-            int resId = holder.itemView.getContext().getResources().getIdentifier(
-                    firstImageName, "drawable", holder.itemView.getContext().getPackageName());
-            if (resId != 0) {
-                holder.ivProductImage.setImageResource(resId);
-            } else {
-                holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
-            }
+            String firstImageUrl = imageUrls.get(0);
+            loadProductImage(holder.ivProductImage, firstImageUrl, holder.itemView.getContext());
         } else {
             holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
         }
@@ -85,6 +79,57 @@ public class RelatedProductAdapter extends RecyclerView.Adapter<RelatedProductAd
     @Override
     public int getItemCount() {
         return products.size();
+    }
+
+    private void loadProductImage(ImageView imageView, String imageUrl, android.content.Context context) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            return;
+        }
+
+        // Check if it's a file:// URI (from internal storage)
+        if (imageUrl.startsWith("file://")) {
+            try {
+                android.net.Uri uri = android.net.Uri.parse(imageUrl);
+                java.io.File file = new java.io.File(uri.getPath());
+                if (file.exists()) {
+                    imageView.setImageURI(uri);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    imageView.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
+        // Check if it's a content:// URI (uploaded image)
+        else if (imageUrl.startsWith("content://")) {
+            try {
+                imageView.setImageURI(android.net.Uri.parse(imageUrl));
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
+        // Otherwise, load from drawable resources
+        else {
+            try {
+                // Remove .jpg or .png extension
+                String imageNameWithoutExt = imageUrl.replace(".jpg", "").replace(".png", "");
+                int resId = context.getResources().getIdentifier(
+                    imageNameWithoutExt, "drawable", context.getPackageName()
+                );
+                
+                if (resId != 0) {
+                    imageView.setImageResource(resId);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    imageView.setImageResource(R.drawable.ic_launcher_foreground);
+                }
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_foreground);
+            }
+        }
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

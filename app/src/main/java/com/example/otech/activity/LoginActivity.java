@@ -11,8 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.otech.MainActivity;
 import com.example.otech.R;
+import com.example.otech.database.DatabaseInitializer;
 import com.example.otech.model.User;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -22,7 +23,8 @@ public class LoginActivity extends AppCompatActivity {
     private TextInputEditText etUsername, etPassword;
     private MaterialButton btnLogin;
     private TextView tvRegister, tvForgotPassword;
-    private MockDataStore dataStore;
+    private com.google.android.material.card.MaterialCardView btnGoogleLogin, btnFacebookLogin;
+    private DataRepository repository;
     private SharedPreferences sharedPreferences;
 
     @Override
@@ -38,7 +40,20 @@ public class LoginActivity extends AppCompatActivity {
         
         setContentView(R.layout.activity_login);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
+        
+        // Initialize database với mock data nếu chưa có
+        DatabaseInitializer.initializeDatabase(this, new DatabaseInitializer.InitCallback() {
+            @Override
+            public void onComplete() {
+                // Database ready
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(LoginActivity.this, "Lỗi khởi tạo database: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
         
         initViews();
         setupListeners();
@@ -50,6 +65,8 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         tvRegister = findViewById(R.id.tvRegister);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
+        btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
+        btnFacebookLogin = findViewById(R.id.btnFacebookLogin);
     }
 
     private void setupListeners() {
@@ -63,6 +80,14 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
+        });
+        
+        btnGoogleLogin.setOnClickListener(v -> {
+            Toast.makeText(this, "Tính năng đăng nhập Google đang phát triển", Toast.LENGTH_SHORT).show();
+        });
+        
+        btnFacebookLogin.setOnClickListener(v -> {
+            Toast.makeText(this, "Tính năng đăng nhập Facebook đang phát triển", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -83,29 +108,46 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Attempt login
-        User user = dataStore.login(username, password);
+        // Disable button và hiển thị loading
+        btnLogin.setEnabled(false);
+        btnLogin.setText("Đang đăng nhập...");
         
-        if (user != null) {
-            // Save login state
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean(Constants.KEY_IS_LOGGED_IN, true);
-            editor.putString(Constants.KEY_USER_ID, user.getId());
-            editor.putString(Constants.KEY_USERNAME, user.getUsername());
-            editor.putString(Constants.KEY_USER_ROLE, user.getRole());
-            editor.apply();
+        // Attempt login - sử dụng background thread qua DataRepository
+        repository.login(username, password, new DataRepository.DataCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                btnLogin.setEnabled(true);
+                btnLogin.setText("Đăng nhập");
+                
+                if (user != null) {
+                    // Save login state
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putBoolean(Constants.KEY_IS_LOGGED_IN, true);
+                    editor.putString(Constants.KEY_USER_ID, user.getId());
+                    editor.putString(Constants.KEY_USERNAME, user.getUsername());
+                    editor.putString(Constants.KEY_USER_ROLE, user.getRole());
+                    editor.apply();
 
-            Toast.makeText(this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-            
-            // Navigate based on role
-            if (user.isAdmin()) {
-                navigateToAdmin();
-            } else {
-                navigateToHome();
+                    Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                    
+                    // Navigate based on role
+                    if (user.isAdmin()) {
+                        navigateToAdmin();
+                    } else {
+                        navigateToHome();
+                    }
+                } else {
+                    Toast.makeText(LoginActivity.this, "Username hoặc mật khẩu không đúng", Toast.LENGTH_SHORT).show();
+                }
             }
-        } else {
-            Toast.makeText(this, "Username hoặc mật khẩu không đúng", Toast.LENGTH_SHORT).show();
-        }
+            
+            @Override
+            public void onError(Exception e) {
+                btnLogin.setEnabled(true);
+                btnLogin.setText("Đăng nhập");
+                Toast.makeText(LoginActivity.this, "Lỗi đăng nhập: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void navigateToHome() {

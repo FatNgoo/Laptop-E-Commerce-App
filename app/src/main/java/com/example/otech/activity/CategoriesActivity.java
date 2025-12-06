@@ -16,7 +16,7 @@ import com.example.otech.MainActivity;
 import com.example.otech.R;
 import com.example.otech.adapter.ProductAdapter;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -26,6 +26,7 @@ import com.google.android.material.chip.ChipGroup;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
 public class CategoriesActivity extends AppCompatActivity implements ProductAdapter.OnProductClickListener {
 
@@ -37,7 +38,7 @@ public class CategoriesActivity extends AppCompatActivity implements ProductAdap
     private RecyclerView rvProducts;
     private BottomNavigationView bottomNavigation;
 
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ProductAdapter productAdapter;
     private ArrayList<Product> allProducts;
     private ArrayList<Product> filteredProducts;
@@ -59,7 +60,7 @@ public class CategoriesActivity extends AppCompatActivity implements ProductAdap
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_categories);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         currentUserId = prefs.getString(Constants.KEY_USER_ID, "");
@@ -192,8 +193,18 @@ public class CategoriesActivity extends AppCompatActivity implements ProductAdap
     }
 
     private void loadProducts() {
-        allProducts = dataStore.getAllProducts();
-        applyFiltersAndSort();
+        repository.getAllProducts(new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                allProducts.clear();
+                allProducts.addAll(products);
+                applyFiltersAndSort();
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(CategoriesActivity.this, "Lỗi tải sản phẩm: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void applyFiltersAndSort() {
@@ -486,18 +497,40 @@ public class CategoriesActivity extends AppCompatActivity implements ProductAdap
             Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        boolean isInWishlist = dataStore.isInWishlist(currentUserId, product.getId());
-
-        if (isInWishlist) {
-            dataStore.removeFromWishlist(currentUserId, product.getId());
-            Toast.makeText(this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
-        } else {
-            dataStore.addToWishlist(currentUserId, product);
-            Toast.makeText(this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
-        }
-
-        productAdapter.notifyItemChanged(position);
+        repository.isInWishlist(currentUserId, product.getId(), new DataRepository.DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isInWishlist) {
+                if (isInWishlist) {
+                    repository.removeFromWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(CategoriesActivity.this, "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
+                            productAdapter.notifyItemChanged(position);
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(CategoriesActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    repository.addToWishlist(currentUserId, product.getId(), new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(CategoriesActivity.this, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show();
+                            productAdapter.notifyItemChanged(position);
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(CategoriesActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(CategoriesActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

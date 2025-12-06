@@ -18,8 +18,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.ProductAdapter;
 import com.example.otech.model.Product;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
+
+import java.util.List;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -49,7 +51,7 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
     private MaterialButton btnApplyFilter;
 
     private ProductAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ArrayList<Product> allProducts;
     private ArrayList<Product> filteredProducts;
     private String currentFilter = "all";
@@ -59,7 +61,7 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_products);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(this);
 
         initViews();
         setupRecyclerView();
@@ -93,11 +95,21 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
     }
 
     private void loadProducts() {
-        allProducts = dataStore.getAllProducts();
-        filteredProducts = new ArrayList<>(allProducts);
-        adapter = new ProductAdapter(this, filteredProducts, this);
-        rvProducts.setAdapter(adapter);
-        updateEmptyState();
+        repository.getAllProducts(new DataRepository.DataCallback<List<Product>>() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                allProducts = new ArrayList<>(products);
+                filteredProducts = new ArrayList<>(allProducts);
+                adapter = new ProductAdapter(ManageProductsActivity.this, filteredProducts, ManageProductsActivity.this);
+                rvProducts.setAdapter(adapter);
+                updateEmptyState();
+            }
+            
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(ManageProductsActivity.this, "Lỗi tải sản phẩm: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupListeners() {
@@ -127,6 +139,8 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
                     currentFilter = "all";
                 } else if (checkedId == R.id.chipLowStock) {
                     currentFilter = "lowstock";
+                } else if (checkedId == R.id.chipOutOfStock) {
+                    currentFilter = "outofstock";
                 }
             }
             filterProducts();
@@ -174,7 +188,8 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
                 product.getBrand().toLowerCase().contains(query.toLowerCase());
 
             boolean matchesFilter = currentFilter.equals("all") ||
-                (currentFilter.equals("lowstock") && product.getStock() < 10);
+                (currentFilter.equals("lowstock") && product.getStock() > 0 && product.getStock() < 10) ||
+                (currentFilter.equals("outofstock") && product.getStock() == 0);
 
             boolean matchesCategory = selectedCategory.equals("Tất cả") || product.getCategory().equals(selectedCategory);
             boolean matchesBrand = selectedBrand.equals("Tất cả") || product.getBrand().equals(selectedBrand);
@@ -450,14 +465,19 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
                         existingProduct.setImageUrl(imageUrl);
                     }
 
-                    boolean success = dataStore.updateProduct(existingProduct);
-                    if (success) {
-                        Toast.makeText(this, "Đã cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
-                        loadProducts();
-                        dialog.dismiss();
-                    } else {
-                        Toast.makeText(this, "Lỗi cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
-                    }
+                    repository.updateProduct(existingProduct, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ManageProductsActivity.this, "Đã cập nhật sản phẩm", Toast.LENGTH_SHORT).show();
+                            loadProducts();
+                            dialog.dismiss();
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ManageProductsActivity.this, "Lỗi cập nhật sản phẩm: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 } else {
                     // Add new product
                     Product newProduct = new Product(
@@ -474,14 +494,19 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
                         stock
                     );
 
-                    boolean success = dataStore.addProduct(newProduct);
-                    if (success) {
-                        Toast.makeText(this, "Đã thêm sản phẩm mới", Toast.LENGTH_SHORT).show();
-                        loadProducts();
-                        dialog.dismiss();
-                    } else {
-                        Toast.makeText(this, "Lỗi thêm sản phẩm", Toast.LENGTH_SHORT).show();
-                    }
+                    repository.insertProduct(newProduct, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ManageProductsActivity.this, "Đã thêm sản phẩm mới", Toast.LENGTH_SHORT).show();
+                            loadProducts();
+                            dialog.dismiss();
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ManageProductsActivity.this, "Lỗi thêm sản phẩm: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "Giá và số lượng phải là số hợp lệ", Toast.LENGTH_SHORT).show();
@@ -495,14 +520,19 @@ public class ManageProductsActivity extends AppCompatActivity implements Product
         new AlertDialog.Builder(this)
                 .setTitle("Xóa sản phẩm")
                 .setMessage("Bạn có chắc muốn xóa " + product.getName() + "?")
-                .setPositiveButton("Xóa", (dialog, which) -> {
-                    boolean success = dataStore.deleteProduct(product.getId());
-                    if (success) {
-                        Toast.makeText(this, "Đã xóa sản phẩm", Toast.LENGTH_SHORT).show();
-                        loadProducts();
-                    } else {
-                        Toast.makeText(this, "Không thể xóa sản phẩm", Toast.LENGTH_SHORT).show();
-                    }
+                .setPositiveButton("埠a", (dialog, which) -> {
+                    repository.deleteProduct(product, new DataRepository.VoidCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(ManageProductsActivity.this, "Đã xóa sản phẩm", Toast.LENGTH_SHORT).show();
+                            loadProducts();
+                        }
+                        
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ManageProductsActivity.this, "Không thể xóa sản phẩm: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

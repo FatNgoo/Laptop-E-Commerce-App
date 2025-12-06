@@ -45,6 +45,13 @@
             android:text="Chờ xử lý" />
 
         <com.google.android.material.chip.Chip
+            android:id="@+id/chipProcessing"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Đang xử lý" />
+
+        <com.google.android.material.chip.Chip
             android:id="@+id/chipShipping"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
@@ -64,6 +71,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Đã hủy" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipOutOfStock"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hết hàng" />
 
     </com.google.android.material.chip.ChipGroup>
 

@@ -14,12 +14,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.otech.R;
 import com.example.otech.adapter.OrderAdapter;
 import com.example.otech.model.Order;
-import com.example.otech.repository.MockDataStore;
+import com.example.otech.repository.DataRepository;
 import com.example.otech.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ManageOrdersActivity extends AppCompatActivity implements OrderAdapter.OnOrderActionListener {
 
@@ -28,7 +29,7 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
     private LinearLayout layoutEmptyOrders;
     private ChipGroup chipGroupStatus;
     private OrderAdapter adapter;
-    private MockDataStore dataStore;
+    private DataRepository repository;
     private ArrayList<Order> allOrders;
     private ArrayList<Order> filteredOrders;
 
@@ -37,7 +38,7 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_orders);
 
-        dataStore = MockDataStore.getInstance();
+        repository = DataRepository.getInstance(getApplicationContext());
 
         initViews();
         setupRecyclerView();
@@ -67,12 +68,16 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 int checkedId = checkedIds.get(0);
                 if (checkedId == R.id.chipPending) {
                     statusFilter = Constants.ORDER_STATUS_PENDING;
+                } else if (checkedId == R.id.chipProcessing) {
+                    statusFilter = Constants.ORDER_STATUS_PROCESSING;
                 } else if (checkedId == R.id.chipShipping) {
                     statusFilter = Constants.ORDER_STATUS_SHIPPING;
                 } else if (checkedId == R.id.chipCompleted) {
                     statusFilter = Constants.ORDER_STATUS_COMPLETED;
                 } else if (checkedId == R.id.chipCancelled) {
                     statusFilter = Constants.ORDER_STATUS_CANCELLED;
+                } else if (checkedId == R.id.chipOutOfStock) {
+                    statusFilter = Constants.ORDER_STATUS_OUT_OF_STOCK;
                 }
             }
             
@@ -81,9 +86,20 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
     }
 
     private void loadOrders() {
-        allOrders = dataStore.getAllOrders();
-        filteredOrders = new ArrayList<>(allOrders);
-        updateOrdersList();
+        allOrders = new ArrayList<>();
+        repository.getAllOrders(new DataRepository.DataCallback<List<Order>>() {
+            @Override
+            public void onSuccess(List<Order> orders) {
+                allOrders.clear();
+                allOrders.addAll(orders);
+                filteredOrders = new ArrayList<>(allOrders);
+                updateOrdersList();
+            }
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(ManageOrdersActivity.this, "Lỗi tải dữ liệu", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void filterOrders(String status) {
@@ -114,7 +130,7 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 adapter = new OrderAdapter(filteredOrders, this);
                 rvOrders.setAdapter(adapter);
             } else {
-                adapter.notifyDataSetChanged();
+                adapter.updateOrders(filteredOrders);
             }
         }
     }
@@ -139,7 +155,8 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 "Đang xử lý",
                 "Đang giao",
                 "Hoàn thành",
-                "Hủy đơn"
+                "Hủy đơn",
+                "Hết hàng"
         };
 
         String[] statusValues = {
@@ -147,7 +164,8 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 Constants.ORDER_STATUS_PROCESSING,
                 Constants.ORDER_STATUS_SHIPPING,
                 Constants.ORDER_STATUS_COMPLETED,
-                Constants.ORDER_STATUS_CANCELLED
+                Constants.ORDER_STATUS_CANCELLED,
+                Constants.ORDER_STATUS_OUT_OF_STOCK
         };
 
         new AlertDialog.Builder(this)
@@ -161,28 +179,39 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
     }
 
     private void updateOrderStatus(Order order, String newStatus) {
-        if (newStatus.equals(Constants.ORDER_STATUS_CANCELLED)) {
-            // If cancelling, ask for reason
+        if (Constants.ORDER_STATUS_CANCELLED.equals(newStatus)) {
+            // If cancelling, use repository.cancelOrder
             new AlertDialog.Builder(this)
                     .setTitle("Lý do hủy đơn")
                     .setMessage("Nhập lý do hủy đơn hàng")
                     .setPositiveButton("Xác nhận", (dialog, which) -> {
-                        boolean success = dataStore.cancelOrder(order.getId(), "Admin hủy đơn");
-                        if (success) {
-                            Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                            loadOrders();
-                        }
+                        repository.cancelOrder(order.getId(), "Admin hủy đơn", new DataRepository.VoidCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(ManageOrdersActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                                loadOrders();
+                            }
+                            @Override
+                            public void onError(Exception e) {
+                                Toast.makeText(ManageOrdersActivity.this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     })
                     .setNegativeButton("Hủy", null)
                     .show();
         } else {
-            boolean success = dataStore.updateOrderStatus(order.getId(), newStatus);
-            if (success) {
-                Toast.makeText(this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
-                loadOrders();
-            } else {
-                Toast.makeText(this, "Không thể cập nhật", Toast.LENGTH_SHORT).show();
-            }
+            order.setStatus(newStatus);
+            repository.updateOrder(order, new DataRepository.VoidCallback() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(ManageOrdersActivity.this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
+                    loadOrders();
+                }
+                @Override
+                public void onError(Exception e) {
+                    Toast.makeText(ManageOrdersActivity.this, "Không thể cập nhật", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 
@@ -198,6 +227,8 @@ public class ManageOrdersActivity extends AppCompatActivity implements OrderAdap
                 return "Hoàn thành";
             case Constants.ORDER_STATUS_CANCELLED:
                 return "Đã hủy";
+            case Constants.ORDER_STATUS_OUT_OF_STOCK:
+                return "Hết hàng";
             default:
                 return status;
         }
